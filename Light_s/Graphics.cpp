@@ -10,11 +10,17 @@ Graphics::Graphics()
 	console = nullptr;
 	rectWindow = { 0 };
 
+	std::memset(m_keyNewState, 0, 256 * sizeof(short));
+	std::memset(m_keyOldState, 0, 256 * sizeof(short));
+	std::memset(m_keys, 0, 256 * sizeof(sKeyState));
+
 	wsApp_name = L"Light\'s";
 }
 
 Graphics::~Graphics()
 {
+	SetConsoleActiveScreenBuffer(hOriginalConsole);
+	delete[] console;
 }
 
 void Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h)
@@ -82,4 +88,71 @@ void Graphics::Error(const wchar_t* msg)
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
 	SetConsoleActiveScreenBuffer(hOriginalConsole);
 	wprintf(L"ERROR: %s\n\t%s\n", msg, buf);
+}
+
+void Graphics::Loop()
+{
+	auto tp1 = std::chrono::system_clock::now();
+	auto tp2 = std::chrono::system_clock::now();
+
+	OnUserCreate();
+
+	bool bExit = false;
+	while (!bExit)
+	{
+		// Handle Timing
+		tp2 = std::chrono::system_clock::now();
+		std::chrono::duration<float> elapsedTime = tp2 - tp1;
+
+		tp1 = tp2;
+		float fElapsedTime = elapsedTime.count();
+
+		// Handle Keyboard Input
+		for (int16_t i = 0; i < 256; i++)
+		{
+			m_keyNewState[i] = GetAsyncKeyState(i);
+
+			m_keys[i].bPressed = false;
+			m_keys[i].bReleased = false;
+
+			if (m_keyNewState[i] != m_keyOldState[i])
+			{
+				if (m_keyNewState[i] & 0x8000)
+				{
+					m_keys[i].bPressed = !m_keys[i].bHeld;
+					m_keys[i].bHeld = true;
+				}
+				else
+				{
+					m_keys[i].bReleased = true;
+					m_keys[i].bHeld = false;
+				}
+			}
+
+			m_keyOldState[i] = m_keyNewState[i];
+		}
+
+		OnUserUpdate(fElapsedTime);
+
+		// Update Title & Present Screen Buffer
+		wchar_t s[256];
+		swprintf_s(s, 256, L"%s - FPS: %3.2f", wsApp_name.c_str(), 1.0f / fElapsedTime);
+		SetConsoleTitle(s);
+		WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
+	}
+}
+
+int16_t Graphics::Get_Console_Width()
+{
+	return iConsoleWidth;
+}
+
+int16_t Graphics::Get_Console_Height()
+{
+	return iConsoleHeight;
+}
+
+Graphics::sKeyState& Graphics::Get_Key(int16_t key_id)
+{
+	return m_keys[key_id];
 }
