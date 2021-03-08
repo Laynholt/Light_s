@@ -267,3 +267,174 @@ void Graphics::Clip(int16_t& x, int16_t& y)
 	if (y < 0) y = 0;
 	else if (y >= iConsoleHeight) y = iConsoleHeight;
 }
+
+void Graphics::ShadingPolygons(const std::vector<fPoint>& points, int16_t c, int16_t col)
+{
+	std::vector<iEdgeScanLine> edges(points.size());
+	int16_t min_y, max_y;
+	int16_t min_x, max_x;
+
+	std::vector<int16_t> scanex;
+
+	min_y = max_y = round(points[0].y);
+
+	for (int16_t i = 0; i < points.size(); i++)
+	{
+		edges[i].x1 = round(points[i].x);
+		edges[i].y1 = round(points[i].y);
+		edges[i].x2 = ((i + 1) == points.size()) ? round(points[0].x) : round(points[i + 1].x);
+		edges[i].y2 = ((i + 1) == points.size()) ? round(points[0].y) : round(points[i + 1].y);
+		edges[i].del_x = edges[i].x2 - edges[i].x1;
+		edges[i].del_y = edges[i].y2 - edges[i].y1;
+		edges[i].del_xy = (edges[i].del_y == 0) ? 0 : edges[i].del_x / edges[i].del_y;
+		edges[i].del_yx = (edges[i].del_x == 0) ? 0 : edges[i].del_y / edges[i].del_x;
+
+		if (edges[i].y2 > max_y)
+			max_y = edges[i].y2;
+		else if (edges[i].y2 < min_y)
+			min_y = edges[i].y2;
+	}
+
+
+	for (int16_t y = min_y; y < max_y; y++)
+	{
+		for (int16_t i = 0; i < points.size(); i++)
+		{
+			if ((edges[i].y1 >= y && edges[i].y2 < y) || (edges[i].y1 < y && edges[i].y2 >= y))
+			{
+				// Count X
+				scanex.push_back(edges[i].x1 + edges[i].del_xy * (y - edges[i].y1));
+			}
+		}
+
+		if (scanex.size())
+		{
+			std::sort(scanex.begin(), scanex.end());
+
+			for (int16_t i = 0; i < scanex.size() - 1; i += 2)
+			{
+				DrawLineBresenham(scanex[i], y, scanex[i + 1], y, c, col);
+			}
+
+			scanex.clear();
+		}
+	}
+}
+
+void Graphics::RotateLineAroundPoint(float x1, float y1, float& x2, float& y2, float& angle)
+{
+	float eps = PI / 180;													// Convert to radian
+
+	x2 = x1 + (x2 - x1) * cos(angle * eps) - (y2 - y1) * sin(angle * eps);  // Rotate angle
+	y2 = y1 + (x2 - x1) * sin(angle * eps) + (y2 - y1) * cos(angle * eps);  // Ratate angle
+}
+
+void Graphics::RotateLineAroundCenter(float& x1, float& y1, float& x2, float& y2, float& angle)
+{
+	float eps = PI / 180;						// Convert to radian
+
+	float x0 = (x1 + x2) / 2;					// Get X center
+	float y0 = (y1 + y2) / 2;					// Get Y center
+
+	// First point
+	x1 = -sin(angle * eps) * (y1 - y0) + cos(angle * eps) * (x1 - x0) + x0;
+	y1 = cos(angle * eps) * (y1 - y0) + sin(angle * eps) * (x1 - x0) + y0;
+
+	// Second point
+	x2 = -sin(angle * eps) * (y2 - y0) + cos(angle * eps) * (x2 - x0) + x0;
+	y2 = cos(angle * eps) * (y2 - y0) + sin(angle * eps) * (x2 - x0) + y0;
+}
+
+void Graphics::RotatePolygons(std::vector<fPoint>& points, float& angle)
+{
+	float c_x, c_y;
+	c_x = c_y = 0.0f;
+
+	for (int16_t i = 0; i < points.size(); i++)
+	{
+		c_x += points[i].x;
+		c_y += points[i].y;
+	}
+
+	c_x /= points.size();
+	c_y /= points.size();
+
+	for (int16_t i = 0; i < points.size(); i++)
+	{
+		RotateLineAroundPoint(c_x, c_y, points[i].x, points[i].y, angle);
+	}
+}
+
+bool Graphics::ScalingLine(fPoint& point1, fPoint& point2, float k)
+{
+	fPoint centers;
+
+	// Center of the line
+	centers.x = (point1.x + point2.x) / 2;
+	centers.y = (point1.y + point2.y) / 2;
+
+	if ((point1.x >= 0 && point1.x <= GetConsoleWidth() && point1.y >= 0 && point1.y <= GetConsoleHeight())
+		|| (point2.x >= 0 && point2.x <= GetConsoleWidth() && point2.y >= 0 && point2.y <= GetConsoleHeight()) || k < 1.0f)
+	{
+		if ((fabs(point1.x - point2.x) > 0.01f
+			&& fabs(point1.y - point2.y) > 0.01f) || k > 1.0f)
+		{
+			point1.x = ((point1.x - centers.x) * k) + centers.x;
+			point2.x = ((point2.x - centers.x) * k) + centers.x;
+			point1.y = ((point1.y - centers.y) * k) + centers.y;
+			point2.y = ((point2.y - centers.y) * k) + centers.y;
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Graphics::ScalingPolygons(std::vector<fPoint>& points, float k)
+{
+	float c_x, c_y;									// Center coords
+	fPoint near_point;
+
+	c_x = c_y = 0.0f;
+	near_point = points[0];
+
+	for (int16_t i = 0; i < points.size(); i++)
+	{
+		c_x += points[i].x;
+		c_y += points[i].y;
+	}
+
+	c_x /= points.size();
+	c_y /= points.size();
+
+	int16_t count = 0;								// Number of visible points
+
+	for (int16_t i = 0; i < points.size(); i++)
+	{
+		// Counting number of visible points
+		if (points[i].x >= 0 && points[i].x <= GetConsoleWidth() && points[i].y >= 0 && points[i].y <= GetConsoleHeight())
+			count++;
+
+		// Find near point about center
+		if (fabs(points[i].x - c_x) <= near_point.x && fabs(points[i].y - c_y) <= near_point.y)
+			near_point = points[i];
+	}
+
+	if (((fabs(near_point.x - c_x) > 0.01f)
+		&& (fabs(near_point.y - c_y) > 0.01f)) || k > 1.0f)
+	{
+		if (count >= 1 || k < 1.0f)
+		{
+			for (int16_t i = 0; i < points.size(); i++)
+			{
+				points[i].x = ((points[i].x - c_x) * k) + c_x;
+				points[i].y = ((points[i].y - c_y) * k) + c_y;
+			}
+
+			return false;
+		}
+	}
+
+	return true;
+}

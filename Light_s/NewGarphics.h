@@ -8,6 +8,7 @@ class NewGarphics : public Graphics
 	// Variables
 private:
 	std::vector<fPoint> points;
+	float angle;
 
 	// Overrided methods
 private:

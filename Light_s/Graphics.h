@@ -133,6 +133,31 @@ protected:
 		}
 	};
 
+	struct iEdgeScanLine
+	{
+		int16_t x1, x2, y1, y2;
+		float del_x, del_y, del_xy, del_yx;
+
+		iEdgeScanLine()
+		{
+			x1 = x2 = y1 = y2 = 0;
+			del_x = del_y = del_xy = del_yx = 0.0f;
+		}
+
+		iEdgeScanLine& operator=(const iEdgeScanLine& obj)
+		{
+			x1 = obj.x1;
+			x2 = obj.x2;
+			y1 = obj.y1;
+			y2 = obj.y2;
+			del_x = obj.del_x;
+			del_y = obj.del_y;
+			del_xy = obj.del_xy;
+			del_yx = obj.del_yx;
+			return *this;
+		}
+	};
+
 	// Drawing methods
 public:
 	void Draw(int16_t x, int16_t y, int16_t c, int16_t col);
@@ -142,6 +167,17 @@ public:
 		// Clear our console
 	void Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col);
 	void Clip(int16_t& x, int16_t& y);
+
+	void ShadingPolygons(const std::vector<fPoint>& points, int16_t c = ' ', int16_t col = BG_WHITE);
+
+	// Actions methods
+public:
+	void RotateLineAroundPoint(float x1, float y1, float& x2, float& y2, float& angle);		// x1, y1 - static coords
+	void RotateLineAroundCenter(float& x1, float& y1, float& x2, float& y2, float& angle);
+	void RotatePolygons(std::vector<fPoint>& points, float& angle);
+
+	bool ScalingLine(fPoint& point1, fPoint& point2, float k);
+	bool ScalingPolygons(std::vector<fPoint>& points, float k);
 };
 
 #endif // !_GRAPHICS_H_
