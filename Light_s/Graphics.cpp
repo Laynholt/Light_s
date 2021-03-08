@@ -156,3 +156,25 @@ Graphics::sKeyState& Graphics::Get_Key(int16_t key_id)
 {
 	return m_keys[key_id];
 }
+
+//########################################//
+//-------------Graphic-2D-----------------//
+//########################################//
+
+void Graphics::Draw(int16_t x, int16_t y, int16_t c, int16_t col)
+{
+	if (x >= 0 && x < iConsoleWidth && y >= 0 && y < iConsoleHeight)
+	{
+		console[y * iConsoleWidth + x].Char.UnicodeChar = c;
+		console[y * iConsoleWidth + x].Attributes = col;
+	}
+}
+
+void Graphics::DrawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
+{
+
+}
+
+void Graphics::DrawPolygons(std::vector<fPoint>& points, int16_t c, int16_t col)
+{
+}

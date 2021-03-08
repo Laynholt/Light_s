@@ -52,17 +52,44 @@ public:
 	~Graphics();
 
 	void ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h);
-	void Error(const wchar_t* msg);
 
 	int16_t Get_Console_Width();
 	int16_t Get_Console_Height();
 	sKeyState& Get_Key(int16_t key_id);
+
+protected:
+	void Error(const wchar_t* msg);
 
 	virtual void OnUserCreate() = 0;
 	virtual void OnUserUpdate(float fElapsedTime) = 0;
 
 private:
 	void Loop();
+
+//---Draw---//
+	// Drawing variables & structures
+protected:
+	struct fPoint										// Point struct, which have X,Y coords
+	{
+		float x;
+		float y;
+
+	public:
+		fPoint(): x(0.0f), y(0.0f) {}
+		fPoint& operator=(const fPoint& obj)
+		{
+			x = obj.x;
+			y = obj.y;
+			return *this;
+		}
+	};
+
+	// Drawing methods
+public:
+	void Draw(int16_t x, int16_t y, int16_t c, int16_t col);
+	void DrawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col);
+	void DrawPolygons(std::vector<fPoint>& points, int16_t c, int16_t col);
+
 };
 
 #endif // !_GRAPHICS_H_
