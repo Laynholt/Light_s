@@ -3,6 +3,9 @@
 int main()
 {
 	NewGarphics game;
-	game.ConstructConsole(120, 60, 6, 6);
+	
+	game.ConstructConsole(240, 140, 4, 4);
+	game.Loop();
+
 	return 0;
 }

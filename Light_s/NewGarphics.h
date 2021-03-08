@@ -5,6 +5,10 @@
 
 class NewGarphics : public Graphics
 {
+	// Variables
+private:
+	std::vector<fPoint> points;
+
 	// Overrided methods
 private:
 	virtual void OnUserCreate() override;

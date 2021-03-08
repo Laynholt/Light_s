@@ -98,6 +98,8 @@ void Graphics::Loop()
 	OnUserCreate();
 
 	bool bExit = false;
+	bool bKeyWasPressed = true;									// Else we cann't go to OnUserUpdate()
+
 	while (!bExit)
 	{
 		// Handle Timing
@@ -122,17 +124,24 @@ void Graphics::Loop()
 					m_keys[i].bPressed = !m_keys[i].bHeld;
 					m_keys[i].bHeld = true;
 				}
+
 				else
 				{
 					m_keys[i].bReleased = true;
 					m_keys[i].bHeld = false;
 				}
+
+				bKeyWasPressed = true;
 			}
 
 			m_keyOldState[i] = m_keyNewState[i];
 		}
 
-		OnUserUpdate(fElapsedTime);
+		if (bKeyWasPressed)
+		{
+			OnUserUpdate(fElapsedTime);
+			bKeyWasPressed = false;
+		}
 
 		// Update Title & Present Screen Buffer
 		wchar_t s[256];
@@ -142,17 +151,17 @@ void Graphics::Loop()
 	}
 }
 
-int16_t Graphics::Get_Console_Width()
+int16_t Graphics::GetConsoleWidth()
 {
 	return iConsoleWidth;
 }
 
-int16_t Graphics::Get_Console_Height()
+int16_t Graphics::GetConsoleHeight()
 {
 	return iConsoleHeight;
 }
 
-Graphics::sKeyState& Graphics::Get_Key(int16_t key_id)
+Graphics::sKeyState& Graphics::GetKey(int16_t key_id)
 {
 	return m_keys[key_id];
 }
@@ -170,11 +179,91 @@ void Graphics::Draw(int16_t x, int16_t y, int16_t c, int16_t col)
 	}
 }
 
-void Graphics::DrawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
+void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
 {
+	int16_t x, y;
+	int16_t deltaX, deltaY;
+	int16_t signX, signY;
+	int16_t balance;
 
+	signX = (x2 > x1) ? 1 : -1;
+	signY = (y2 > y1) ? 1 : -1;
+
+	deltaX = (signX > 0) ? (x2 - x1) : (x1 - x2);
+	deltaY = (signY > 0) ? (y2 - y1) : (y1 - y2);
+
+	x = x1; y = y1;
+
+	if (deltaX >= deltaY)
+	{
+		deltaY <<= 1;
+		balance = deltaY - deltaX;
+		deltaX <<= 1;
+
+		while (x != x2)
+		{
+			Draw(x, y, ' ', BG_WHITE);
+			if (balance >= 0)
+			{
+				y += signY;
+				balance -= deltaX;
+			}
+
+			balance += deltaY;
+			x += signX;
+		}
+
+		Draw(x, y, ' ', BG_WHITE);
+	}
+
+	else
+	{
+		deltaX <<= 1;
+		balance = deltaX - deltaY;
+		deltaY <<= 1;
+
+		while (y != y2)
+		{
+			Draw(x, y, ' ', BG_WHITE);
+			if (balance >= 0)
+			{
+				x += signX;
+				balance -= deltaY;
+			}
+
+			balance += deltaX;
+			y += signY;
+		}
+
+		Draw(x, y, ' ', BG_WHITE);
+	}
 }
 
 void Graphics::DrawPolygons(std::vector<fPoint>& points, int16_t c, int16_t col)
 {
+	int16_t i;
+
+	for (i = 0; i < points.size() - 1; i++)
+	{
+		DrawLineBresenham(round(points[i].x), round(points[i].y), round(points[i + 1].x), round(points[i + 1].y), c, col);
+	}
+	DrawLineBresenham(round(points[i].x), round(points[i].y), round(points[0].x), round(points[0].y), c, col);
+}
+
+void Graphics::Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
+{
+	Clip(x1, y1);
+	Clip(x2, y2);
+	for (int16_t x = x1; x < x2; x++)
+		for (int16_t y = y1; y < y2; y++)
+			Draw(x, y, c, col);
+}
+
+void Graphics::Clip(int16_t& x, int16_t& y)
+{
+	if (x < 0) x = 0;
+	else if (x >= iConsoleWidth) x = iConsoleWidth;
+
+	if (y < 0) y = 0;
+	else if (y >= iConsoleHeight) y = iConsoleHeight;
 }
