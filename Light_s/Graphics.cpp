@@ -23,13 +23,10 @@ Graphics::~Graphics()
 	delete[] console;
 }
 
-void Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h)
+int16_t Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h)
 {
 	if (hConsole == INVALID_HANDLE_VALUE)
-	{
-		Error(L"Handle error.");
-		return;
-	}
+		return Error(L"Handle error.");
 
 	iConsoleWidth = width;
 	iConsoleHeight = height;
@@ -38,16 +35,13 @@ void Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w, i
 	SetConsoleWindowInfo(hConsole, TRUE, &rectWindow);
 
 	// Set the size of the screen buffer
-	COORD coord = { (short)iConsoleWidth, (short)iConsoleHeight };
+	COORD coord = { (int16_t)iConsoleWidth, (int16_t)iConsoleHeight };
 	if (!SetConsoleScreenBufferSize(hConsole, coord))
 		Error(L"SetConsoleScreenBufferSize");
 
 	// Assign screen buffer to the console
 	if (!SetConsoleActiveScreenBuffer(hConsole))
-	{
-		Error(L"SetConsoleActiveScreenBuffer");
-		return;
-	}
+		return Error(L"SetConsoleActiveScreenBuffer");
 
 	// Set the font size now that the screen buffer has been assigned to the console
 	CONSOLE_FONT_INFOEX cfi;
@@ -73,21 +67,56 @@ void Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w, i
 		return Error(L"Screen Width / Font Width Too Big");
 
 	// Set Physical Console Window Size
-	rectWindow = { 0, 0, (short)iConsoleWidth - 1, (short)iConsoleHeight - 1 };
+	rectWindow = { 0, 0, (int16_t)iConsoleWidth - 1, (int16_t)iConsoleHeight - 1 };
 	if (!SetConsoleWindowInfo(hConsole, TRUE, &rectWindow))
 		return Error(L"SetConsoleWindowInfo");
 
 	// Allocate memory for screen buffer
 	console = new CHAR_INFO[iConsoleWidth * iConsoleHeight];
 	memset(console, 0, sizeof(CHAR_INFO) * iConsoleWidth * iConsoleHeight);
+
+	return 0;
 }
 
-void Graphics::Error(const wchar_t* msg)
+int16_t Graphics::Error(const wchar_t* msg)
 {
 	wchar_t buf[256];
+
+	SetConsoleDefault();
+
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
 	SetConsoleActiveScreenBuffer(hOriginalConsole);
 	wprintf(L"ERROR: %s\n\t%s\n", msg, buf);
+
+	return 1;
+}
+
+void Graphics::SetConsoleDefault()
+{
+	// Font 14; w 85; h 25
+
+	// Set Font
+	CONSOLE_FONT_INFOEX cfi;
+	cfi.cbSize = sizeof(cfi);
+	cfi.nFont = 0;
+	cfi.dwFontSize.X = 8;
+	cfi.dwFontSize.Y = 14;
+	cfi.FontFamily = FF_DONTCARE;
+	cfi.FontWeight = FW_NORMAL;
+
+	wcscpy_s(cfi.FaceName, L"Lucida Console");
+	SetCurrentConsoleFontEx(hConsole, false, &cfi);
+
+	// Set the size of the screen buffer
+	COORD coord = { 106, 26 };
+	SetConsoleScreenBufferSize(hConsole, coord);
+
+	// Assign screen buffer to the console
+	SetConsoleActiveScreenBuffer(hConsole);
+
+	// Set Physical Console Window Size
+	rectWindow = { 0, 0, 105, 25 };
+	SetConsoleWindowInfo(hConsole, TRUE, &rectWindow);
 }
 
 void Graphics::Loop()

@@ -21,7 +21,7 @@ Character Set -> Use Unicode.
 #include <cmath>
 #include <algorithm>
 
-const float PI = 3.14159f;
+constexpr float PI = 3.14159f;
 
 	// Enum of colors for drawing
 enum COLOUR
@@ -100,17 +100,20 @@ public:
 	Graphics();
 	~Graphics();
 
-	void ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h);
+	int16_t ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h);
 
 	int16_t GetConsoleWidth();
 	int16_t GetConsoleHeight();
 	sKeyState& GetKey(int16_t key_id);
 
 protected:
-	void Error(const wchar_t* msg);
+	int16_t Error(const wchar_t* msg);
 
 	virtual void OnUserCreate() = 0;
 	virtual void OnUserUpdate(float fElapsedTime) = 0;
+
+private:
+	void SetConsoleDefault();
 
 public:
 	void Loop();
