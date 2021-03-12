@@ -210,6 +210,16 @@ void Graphics::Draw(int16_t x, int16_t y, int16_t c, int16_t col)
 
 void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
 {
+	/*	dx = (x2-x1)
+		dy = (y2-y1)
+
+		f(x,y) = dy*X - dx*Y - (x1*dy - y1*dx)
+
+		f(M) = dy - dx/2
+		f(T) = f(M) + dy - dx
+		f(B) = f(M) + dy
+	*/
+
 	int16_t x, y;
 	int16_t deltaX, deltaY;
 	int16_t signX, signY;
@@ -223,10 +233,10 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 
 	x = x1; y = y1;
 
-	if (deltaX >= deltaY)
+	if (deltaX >= deltaY)				// We should use larger axis [X>=Y]
 	{
 		deltaY <<= 1;
-		balance = deltaY - deltaX;
+		balance = deltaY - deltaX;		// f(M)
 		deltaX <<= 1;
 
 		while (x != x2)
@@ -235,17 +245,17 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 			if (balance >= 0)
 			{
 				y += signY;
-				balance -= deltaX;
+				balance -= deltaX;		// f(T) = f(M) - dx => half part f(T) [still need dy]
 			}
 
-			balance += deltaY;
+			balance += deltaY;			// f(M) + dy => f(B) or part of f(T)
 			x += signX;
 		}
 
 		Draw(x, y, ' ', BG_WHITE);
 	}
 
-	else
+	else								// Similarly for axis [Y>X]
 	{
 		deltaX <<= 1;
 		balance = deltaX - deltaY;
@@ -268,18 +278,18 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 	}
 }
 
-void Graphics::DrawPolygons(std::vector<fPoint>& points, int16_t c, int16_t col)
+void Graphics::DrawPolygons(std::vector<fPoint2D>& points, int16_t c, int16_t col)
 {
 	int16_t i;
 
 	for (i = 0; i < points.size() - 1; i++)
 	{
-		DrawLineBresenham(round(points[i].x), round(points[i].y), round(points[i + 1].x), round(points[i + 1].y), c, col);
+		DrawLineBresenham(roundf(points[i].x), roundf(points[i].y), roundf(points[i + 1].x), roundf(points[i + 1].y), c, col);
 	}
-	DrawLineBresenham(round(points[i].x), round(points[i].y), round(points[0].x), round(points[0].y), c, col);
+	DrawLineBresenham(roundf(points[i].x), roundf(points[i].y), roundf(points[0].x), roundf(points[0].y), c, col);
 }
 
-void Graphics::Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
+void Graphics::ClearConsole(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
 {
 	Clip(x1, y1);
 	Clip(x2, y2);
@@ -297,11 +307,10 @@ void Graphics::Clip(int16_t& x, int16_t& y)
 	else if (y >= iConsoleHeight) y = iConsoleHeight;
 }
 
-void Graphics::ShadingPolygons(const std::vector<fPoint>& points, int16_t c, int16_t col)
+void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c, int16_t col)
 {
 	std::vector<iEdgeScanLine> edges(points.size());
 	int16_t min_y, max_y;
-	int16_t min_x, max_x;
 
 	std::vector<int16_t> scanex;
 
@@ -316,7 +325,6 @@ void Graphics::ShadingPolygons(const std::vector<fPoint>& points, int16_t c, int
 		edges[i].del_x = edges[i].x2 - edges[i].x1;
 		edges[i].del_y = edges[i].y2 - edges[i].y1;
 		edges[i].del_xy = (edges[i].del_y == 0) ? 0 : edges[i].del_x / edges[i].del_y;
-		edges[i].del_yx = (edges[i].del_x == 0) ? 0 : edges[i].del_y / edges[i].del_x;
 
 		if (edges[i].y2 > max_y)
 			max_y = edges[i].y2;
@@ -350,6 +358,80 @@ void Graphics::ShadingPolygons(const std::vector<fPoint>& points, int16_t c, int
 	}
 }
 
+void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t c, int16_t col, int16_t col_edges)
+{
+	// Its Beta version!
+	// Its doesnt shade Convex polygons and has some problems with rotations
+
+	fPoint2D center, temp;
+	std::queue<fPoint2D> queue;
+
+	for (auto& point : points)
+	{
+		center += point;
+	}
+	center /= points.size();
+	
+	center.x = roundf(center.x);
+	center.y = roundf(center.y);
+
+	queue.push(std::move(center));
+
+	int16_t left, right, i;
+	CHAR_INFO* console_ptr = nullptr;
+
+	left = right = i = 0;
+	while (!queue.empty())
+	{
+		temp = std::move(queue.front());
+		queue.pop();
+		Draw(temp.x, temp.y);
+
+		console_ptr = &console[(int16_t)temp.y * iConsoleWidth + (int16_t)temp.x];
+
+		// Top
+		if ((console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col)
+			queue.push(std::move(fPoint2D(temp.x, temp.y - 1.0f)));
+
+		// Bottom
+		if ((console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col)
+			queue.push(std::move(fPoint2D(temp.x, temp.y + 1.0f)));
+
+		// Left
+		if ((console_ptr - 1)->Attributes != col_edges && (console_ptr - 1)->Attributes != col)
+			queue.push(std::move(fPoint2D(temp.x - 1.0f, temp.y)));
+
+		// Right
+		if ((console_ptr + 1)->Attributes != col_edges && (console_ptr + 1)->Attributes != col)
+			queue.push(std::move(fPoint2D(temp.x + 1.0f, temp.y)));
+
+		// We need check to intersection between point and edges of the polygon
+		// console[y * iConsoleWidth + x].Attributes
+
+		//// Left edge
+		//i = -1;
+		//while ((console_ptr + i)->Attributes != col_edges && (console_ptr + i)->Attributes != col) 
+		//{ i--; }
+		//left = (int16_t)temp.x + i;
+
+		//// Right edge
+		//i = 1;
+		//while ((console_ptr + i)->Attributes != col_edges && (console_ptr + i)->Attributes != col)
+		//{ i++; }
+		//right = (int16_t)temp.x + i;
+
+		//// Top
+		//if ((console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col)
+		//	queue.push(std::move(fPoint2D(temp.x, temp.y - 1.0f)));
+
+		//// Bottom
+		//if ((console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col)
+		//	queue.push(std::move(fPoint2D(temp.x, temp.y + 1.0f)));
+
+		//DrawLineBresenham(left, temp.y, right, temp.y);
+	}
+}
+
 void Graphics::RotateLineAroundPoint(float x1, float y1, float& x2, float& y2, float& angle)
 {
 	float eps = PI / 180;													// Convert to radian
@@ -374,44 +456,38 @@ void Graphics::RotateLineAroundCenter(float& x1, float& y1, float& x2, float& y2
 	y2 = cos(angle * eps) * (y2 - y0) + sin(angle * eps) * (x2 - x0) + y0;
 }
 
-void Graphics::RotatePolygons(std::vector<fPoint>& points, float& angle)
+void Graphics::RotatePolygons(std::vector<fPoint2D>& points, float& angle)
 {
-	float c_x, c_y;
-	c_x = c_y = 0.0f;
+	fPoint2D center;
 
-	for (int16_t i = 0; i < points.size(); i++)
+	for (auto& point : points)
 	{
-		c_x += points[i].x;
-		c_y += points[i].y;
+		center += point;
 	}
 
-	c_x /= points.size();
-	c_y /= points.size();
+	center /= points.size();
 
-	for (int16_t i = 0; i < points.size(); i++)
+	for (auto& point : points)
 	{
-		RotateLineAroundPoint(c_x, c_y, points[i].x, points[i].y, angle);
+		RotateLineAroundPoint(center.x, center.y, point.x, point.y, angle);
 	}
 }
 
-bool Graphics::ScalingLine(fPoint& point1, fPoint& point2, float k)
+bool Graphics::ScalingLine(fPoint2D& point1, fPoint2D& point2, float k)
 {
-	fPoint centers;
+	fPoint2D centers;
 
 	// Center of the line
-	centers.x = (point1.x + point2.x) / 2;
-	centers.y = (point1.y + point2.y) / 2;
+	centers = (point1 + point2) / 2;
 
-	if ((point1.x >= 0 && point1.x <= GetConsoleWidth() && point1.y >= 0 && point1.y <= GetConsoleHeight())
-		|| (point2.x >= 0 && point2.x <= GetConsoleWidth() && point2.y >= 0 && point2.y <= GetConsoleHeight()) || k < 1.0f)
+	if ((point1.x >= 1 && point1.x <= GetConsoleWidth() - 1 && point1.y >= 1 && point1.y <= GetConsoleHeight() - 1)
+		&& (point2.x >= 1 && point2.x <= GetConsoleWidth() - 1 && point2.y >= 1 && point2.y <= GetConsoleHeight() - 1) || k < 1.0f)
 	{
 		if ((fabs(point1.x - point2.x) > 0.01f
 			&& fabs(point1.y - point2.y) > 0.01f) || k > 1.0f)
 		{
-			point1.x = ((point1.x - centers.x) * k) + centers.x;
-			point2.x = ((point2.x - centers.x) * k) + centers.x;
-			point1.y = ((point1.y - centers.y) * k) + centers.y;
-			point2.y = ((point2.y - centers.y) * k) + centers.y;
+			point1 = ((point1 - centers) * k) + centers;
+			point2 = ((point2 - centers) * k) + centers;
 
 			return false;
 		}
@@ -420,45 +496,41 @@ bool Graphics::ScalingLine(fPoint& point1, fPoint& point2, float k)
 	return true;
 }
 
-bool Graphics::ScalingPolygons(std::vector<fPoint>& points, float k)
+bool Graphics::ScalingPolygons(std::vector<fPoint2D>& points, float k)
 {
-	float c_x, c_y;									// Center coords
-	fPoint near_point;
+	fPoint2D center;									// Center coords
+	fPoint2D near_point;
 
-	c_x = c_y = 0.0f;
 	near_point = points[0];
 
-	for (int16_t i = 0; i < points.size(); i++)
+	for (auto& point : points)
 	{
-		c_x += points[i].x;
-		c_y += points[i].y;
+		center += point;
 	}
 
-	c_x /= points.size();
-	c_y /= points.size();
+	center /= points.size();
 
 	int16_t count = 0;								// Number of visible points
 
-	for (int16_t i = 0; i < points.size(); i++)
+	for (auto& point : points)
 	{
 		// Counting number of visible points
-		if (points[i].x >= 0 && points[i].x <= GetConsoleWidth() && points[i].y >= 0 && points[i].y <= GetConsoleHeight())
+		if (point.x >= 1 && point.x <= GetConsoleWidth() - 1 && point.y >= 1 && point.y <= GetConsoleHeight() - 1)
 			count++;
 
 		// Find near point about center
-		if (fabs(points[i].x - c_x) <= near_point.x && fabs(points[i].y - c_y) <= near_point.y)
-			near_point = points[i];
+		if (fabs(point.x - center.x) <= near_point.x && fabs(point.y - center.y) <= near_point.y)
+			near_point = point;
 	}
 
-	if (((fabs(near_point.x - c_x) > 0.01f)
-		&& (fabs(near_point.y - c_y) > 0.01f)) || k > 1.0f)
+	if (((fabs(near_point.x - center.x) > 0.01f)
+		&& (fabs(near_point.y - center.y) > 0.01f)) || k > 1.0f)
 	{
-		if (count >= 1 || k < 1.0f)
+		if (count == points.size() || k < 1.0f)
 		{
-			for (int16_t i = 0; i < points.size(); i++)
+			for (auto& point : points)
 			{
-				points[i].x = ((points[i].x - c_x) * k) + c_x;
-				points[i].y = ((points[i].y - c_y) * k) + c_y;
+				point = ((point - center) * k) + center;
 			}
 
 			return false;

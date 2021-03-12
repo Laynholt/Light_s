@@ -16,6 +16,7 @@ Character Set -> Use Unicode.
 #include <chrono>
 //#include <thread>
 
+#include <queue>
 #include <vector>
 
 #include <cmath>
@@ -121,30 +122,74 @@ public:
 //---Draw---//
 	// Drawing variables & structures
 protected:
-	struct fPoint										// Point struct, which have X,Y coords
+		// Struct for 2D graphics
+	struct fPoint2D										// Point struct, which have X,Y coords
 	{
 		float x;
 		float y;
 
 	public:
-		fPoint(): x(0.0f), y(0.0f) {}
-		fPoint& operator=(const fPoint& obj)
+		fPoint2D(): x(0.0f), y(0.0f) {}
+		fPoint2D(float x, float y): x(x), y(y) {}
+
+		fPoint2D& operator=(const fPoint2D& obj)
 		{
 			x = obj.x;
 			y = obj.y;
 			return *this;
 		}
-	};
+		fPoint2D& operator+=(const fPoint2D& obj)
+		{
+			x += obj.x;
+			y += obj.y;
+			return *this;
+		}
+		fPoint2D& operator-=(const fPoint2D& obj)
+		{
+			x -= obj.x;
+			y -= obj.y;
+			return *this;
+		}
+		fPoint2D& operator*=(float value)
+		{
+			x *= value;
+			y *= value;
+			return *this;
+		}
+		fPoint2D& operator/=(float value)
+		{
+			x /= value;
+			y /= value;
+			return *this;
+		}
 
+		fPoint2D operator+(const fPoint2D& obj)
+		{
+			return fPoint2D(x + obj.x, y + obj.y);
+		}
+		fPoint2D operator-(const fPoint2D& obj)
+		{
+			return fPoint2D(x - obj.x, y - obj.y);
+		}
+		fPoint2D operator*(float value)
+		{
+			return fPoint2D(x * value, y * value);
+		}
+		fPoint2D operator/(float value)
+		{
+			return fPoint2D(x / value, y / value);
+		}
+	};
+		// Struct for ScanLine algorithm
 	struct iEdgeScanLine
 	{
 		int16_t x1, x2, y1, y2;
-		float del_x, del_y, del_xy, del_yx;
+		float del_x, del_y, del_xy;
 
 		iEdgeScanLine()
 		{
 			x1 = x2 = y1 = y2 = 0;
-			del_x = del_y = del_xy = del_yx = 0.0f;
+			del_x = del_y = del_xy = 0.0f;
 		}
 
 		iEdgeScanLine& operator=(const iEdgeScanLine& obj)
@@ -156,31 +201,99 @@ protected:
 			del_x = obj.del_x;
 			del_y = obj.del_y;
 			del_xy = obj.del_xy;
-			del_yx = obj.del_yx;
 			return *this;
 		}
+	};
+		// Struct for 3D graphics
+	struct fPoint3D										// Point struct, which have X,Y coords
+	{
+		float x, y, z, w;
+
+	public:
+		fPoint3D() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
+		fPoint3D(float x, float y, float z, float w = 1.0f) : x(x), y(y), z(z), w(w) {}
+
+		fPoint3D& operator=(const fPoint3D& obj)
+		{
+			x = obj.x;
+			y = obj.y;
+			z = obj.z;
+			w = obj.w;
+			return *this;
+		}
+		fPoint3D& operator+=(const fPoint3D& obj)
+		{
+			x += obj.x;
+			y += obj.y;
+			z += obj.z;
+			return *this;
+		}
+		fPoint3D& operator-=(const fPoint3D& obj)
+		{
+			x -= obj.x;
+			y -= obj.y;
+			z -= obj.z;
+			return *this;
+		}
+		fPoint3D& operator*=(float value)
+		{
+			x *= value;
+			y *= value;
+			z *= value;
+			return *this;
+		}
+		fPoint3D& operator/=(float value)
+		{
+			x /= value;
+			y /= value;
+			z /= value;
+			return *this;
+		}
+
+		fPoint3D operator+(const fPoint3D& obj)
+		{
+			return fPoint3D(x + obj.x, y + obj.y, z + obj.z);
+		}
+		fPoint3D operator-(const fPoint3D& obj)
+		{
+			return fPoint3D(x - obj.x, y - obj.y, z - obj.z);
+		}
+		fPoint3D operator*(float value)
+		{
+			return fPoint3D(x * value, y * value, z * value);
+		}
+		fPoint3D operator/(float value)
+		{
+			return fPoint3D(x + value, y / value, z / value);
+		}
+
+		float DotProduct(fPoint3D& v, float angle) {}
+		float VectorLength() {}
 	};
 
 	// Drawing methods
 public:
-	void Draw(int16_t x, int16_t y, int16_t c, int16_t col);
-	void DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col);
-	void DrawPolygons(std::vector<fPoint>& points, int16_t c, int16_t col);
+	void Draw(int16_t x, int16_t y, int16_t c = ' ', int16_t col = BG_WHITE);
+	void DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c = ' ', int16_t col = BG_WHITE);
+	void DrawPolygons(std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE);
 
 		// Clear our console
-	void Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col);
+	void ClearConsole(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c = PIXEL_SOLID, int16_t col = FG_BLACK);
 	void Clip(int16_t& x, int16_t& y);
 
-	void ShadingPolygons(const std::vector<fPoint>& points, int16_t c = ' ', int16_t col = BG_WHITE);
+	void ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE);
+	void ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t c = ' ', 
+		int16_t col = BG_WHITE, int16_t col_edges = BG_WHITE);
+
 
 	// Actions methods
 public:
 	void RotateLineAroundPoint(float x1, float y1, float& x2, float& y2, float& angle);		// x1, y1 - static coords
 	void RotateLineAroundCenter(float& x1, float& y1, float& x2, float& y2, float& angle);
-	void RotatePolygons(std::vector<fPoint>& points, float& angle);
+	void RotatePolygons(std::vector<fPoint2D>& points, float& angle);
 
-	bool ScalingLine(fPoint& point1, fPoint& point2, float k);
-	bool ScalingPolygons(std::vector<fPoint>& points, float k);
+	bool ScalingLine(fPoint2D& point1, fPoint2D& point2, float k);
+	bool ScalingPolygons(std::vector<fPoint2D>& points, float k);
 };
 
 #endif // !_GRAPHICS_H_

@@ -7,7 +7,7 @@ class NewGarphics : public Graphics
 {
 	// Variables
 private:
-	std::vector<fPoint> points;
+	std::vector<fPoint2D> points;
 	float angle;
 
 	// Overrided methods
