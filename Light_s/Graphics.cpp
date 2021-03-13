@@ -361,7 +361,7 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t c, int16_t col, int16_t col_edges)
 {
 	// Its Beta version!
-	// Its doesnt shade Convex polygons and has some problems with rotations
+	// It has some problems with rotations if poligon will go over screen
 
 	fPoint2D center, temp;
 	std::queue<fPoint2D> queue;
@@ -377,10 +377,10 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 
 	queue.push(std::move(center));
 
-	int16_t left, right, i;
+	//int16_t left, right, i;
 	CHAR_INFO* console_ptr = nullptr;
 
-	left = right = i = 0;
+	//left = right = i = 0;
 	while (!queue.empty())
 	{
 		temp = std::move(queue.front());
@@ -389,21 +389,34 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 
 		console_ptr = &console[(int16_t)temp.y * iConsoleWidth + (int16_t)temp.x];
 
+
 		// Top
 		if ((console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col)
+		{
 			queue.push(std::move(fPoint2D(temp.x, temp.y - 1.0f)));
+			Draw(temp.x, temp.y - 1.0f);
+		}
 
 		// Bottom
 		if ((console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col)
+		{
 			queue.push(std::move(fPoint2D(temp.x, temp.y + 1.0f)));
+			Draw(temp.x, temp.y + 1.0f);
+		}
 
 		// Left
 		if ((console_ptr - 1)->Attributes != col_edges && (console_ptr - 1)->Attributes != col)
+		{
 			queue.push(std::move(fPoint2D(temp.x - 1.0f, temp.y)));
+			Draw(temp.x - 1.0f, temp.y);
+		}
 
 		// Right
 		if ((console_ptr + 1)->Attributes != col_edges && (console_ptr + 1)->Attributes != col)
+		{
 			queue.push(std::move(fPoint2D(temp.x + 1.0f, temp.y)));
+			Draw(temp.x + 1.0f, temp.y);
+		}
 
 		// We need check to intersection between point and edges of the polygon
 		// console[y * iConsoleWidth + x].Attributes

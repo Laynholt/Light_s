@@ -18,7 +18,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 	if (GetKey('S').bHeld) { ScalingPolygons(points, 0.99f); }
 	if (GetKey('A').bHeld) { angle = -0.9f; RotatePolygons(points, angle); }
 	if (GetKey('D').bHeld) { angle = 0.9f; RotatePolygons(points, angle); }
-	if (GetKey('R').bHeld)
+	if (GetKey('E').bHeld)
 	{
 		for (auto& point : points)
 		{
@@ -32,9 +32,23 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			point.x -= 100.0f * fElapsedTime;
 		}
 	}
+	if (GetKey('F').bHeld)
+	{
+		for (auto& point : points)
+		{
+			point.y += 100.0f * fElapsedTime;
+		}
+	}
+	if (GetKey('R').bHeld)
+	{
+		for (auto& point : points)
+		{
+			point.y -= 100.0f * fElapsedTime;
+		}
+	}
 
 	//DrawLineBresenham(points[0].x, points[0].y, points[1].x, points[1].y, ' ', BG_WHITE);
 	DrawPolygons(points, ' ', BG_WHITE);
 	//ShadingPolygonsScanLine(points);
-	//ShadingPolygonsFloodFill(points);
+	ShadingPolygonsFloodFill(points);
 }
