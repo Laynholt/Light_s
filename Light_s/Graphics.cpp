@@ -280,7 +280,7 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 
 void Graphics::DrawPolygons(std::vector<fPoint2D>& points, int16_t c, int16_t col)
 {
-	int16_t i;
+	size_t i;
 
 	for (i = 0; i < points.size() - 1; i++)
 	{
@@ -316,7 +316,7 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 
 	min_y = max_y = round(points[0].y);
 
-	for (int16_t i = 0; i < points.size(); i++)
+	for (size_t i = 0; i < points.size(); i++)
 	{
 		edges[i].x1 = round(points[i].x);
 		edges[i].y1 = round(points[i].y);
@@ -335,7 +335,7 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 
 	for (int16_t y = min_y; y < max_y; y++)
 	{
-		for (int16_t i = 0; i < points.size(); i++)
+		for (size_t i = 0; i < points.size(); i++)
 		{
 			if ((edges[i].y1 >= y && edges[i].y2 < y) || (edges[i].y1 < y && edges[i].y2 >= y))
 			{
@@ -348,7 +348,7 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 		{
 			std::sort(scanex.begin(), scanex.end());
 
-			for (int16_t i = 0; i < scanex.size() - 1; i += 2)
+			for (size_t i = 0; i < scanex.size() - 1; i += 2)
 			{
 				DrawLineBresenham(scanex[i], y, scanex[i + 1], y, c, col);
 			}
@@ -361,7 +361,7 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t c, int16_t col, int16_t col_edges)
 {
 	// Its Beta version!
-	// It has some problems with rotations if poligon will go over screen
+	// It has some problems with filling some corners
 
 	fPoint2D center, temp;
 	std::queue<fPoint2D> queue;
@@ -377,71 +377,57 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 
 	queue.push(std::move(center));
 
-	//int16_t left, right, i;
 	CHAR_INFO* console_ptr = nullptr;
 
-	//left = right = i = 0;
+
+	Draw(center.x, center.y);
+
+	// lambda for checking edges of screen
+	auto on_screen = [this](int16_t x, int16_t y)
+	{
+		if (x >= 0.0f && x <= GetConsoleWidth() && y >= 0.0f && y <= GetConsoleHeight())
+			return true;
+		return false;
+	};
+
 	while (!queue.empty())
 	{
 		temp = std::move(queue.front());
 		queue.pop();
-		Draw(temp.x, temp.y);
-
+		
 		console_ptr = &console[(int16_t)temp.y * iConsoleWidth + (int16_t)temp.x];
 
-
 		// Top
-		if ((console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col)
+		if ((console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col 
+			&& on_screen(temp.x, temp.y - 1.0f))
 		{
 			queue.push(std::move(fPoint2D(temp.x, temp.y - 1.0f)));
 			Draw(temp.x, temp.y - 1.0f);
 		}
 
 		// Bottom
-		if ((console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col)
+		if ((console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col
+			&& on_screen(temp.x, temp.y + 1.0f))
 		{
 			queue.push(std::move(fPoint2D(temp.x, temp.y + 1.0f)));
 			Draw(temp.x, temp.y + 1.0f);
 		}
 
 		// Left
-		if ((console_ptr - 1)->Attributes != col_edges && (console_ptr - 1)->Attributes != col)
+		if ((console_ptr - 1)->Attributes != col_edges && (console_ptr - 1)->Attributes != col
+			&& on_screen(temp.x - 1.0f, temp.y))
 		{
 			queue.push(std::move(fPoint2D(temp.x - 1.0f, temp.y)));
 			Draw(temp.x - 1.0f, temp.y);
 		}
 
 		// Right
-		if ((console_ptr + 1)->Attributes != col_edges && (console_ptr + 1)->Attributes != col)
+		if ((console_ptr + 1)->Attributes != col_edges && (console_ptr + 1)->Attributes != col
+			&& on_screen(temp.x + 1.0f, temp.y))
 		{
 			queue.push(std::move(fPoint2D(temp.x + 1.0f, temp.y)));
 			Draw(temp.x + 1.0f, temp.y);
 		}
-
-		// We need check to intersection between point and edges of the polygon
-		// console[y * iConsoleWidth + x].Attributes
-
-		//// Left edge
-		//i = -1;
-		//while ((console_ptr + i)->Attributes != col_edges && (console_ptr + i)->Attributes != col) 
-		//{ i--; }
-		//left = (int16_t)temp.x + i;
-
-		//// Right edge
-		//i = 1;
-		//while ((console_ptr + i)->Attributes != col_edges && (console_ptr + i)->Attributes != col)
-		//{ i++; }
-		//right = (int16_t)temp.x + i;
-
-		//// Top
-		//if ((console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col)
-		//	queue.push(std::move(fPoint2D(temp.x, temp.y - 1.0f)));
-
-		//// Bottom
-		//if ((console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col)
-		//	queue.push(std::move(fPoint2D(temp.x, temp.y + 1.0f)));
-
-		//DrawLineBresenham(left, temp.y, right, temp.y);
 	}
 }
 
@@ -551,4 +537,142 @@ bool Graphics::ScalingPolygons(std::vector<fPoint2D>& points, float k)
 	}
 
 	return true;
+}
+
+void Graphics::MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m)
+{
+	for (auto& point : points)
+	{
+		point.x += m.m[1][0];
+		point.y += m.m[0][1];
+	}
+}
+
+float Graphics::Vector_DotProduct(fPoint3D& v1, fPoint3D& v2)
+{
+	return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
+}
+
+float Graphics::Vector_Length(fPoint3D& v)
+{
+	return sqrt(Vector_DotProduct(v, v));;
+}
+
+Graphics::fPoint3D Graphics::Vector_Normalise(fPoint3D& v)
+{
+	float l = Vector_Length(v);
+	return v / l;
+}
+
+Graphics::fPoint3D Graphics::Vector_CrossProduct(fPoint3D& v1, fPoint3D& v2)
+{
+	fPoint3D v;
+	v.x = v1.y * v2.z - v1.z * v2.y;
+	v.y = v1.z * v2.x - v1.x * v2.z;
+	v.z = v1.x * v2.y - v1.y * v2.x;
+	return v;
+}
+
+Graphics::fPoint2D Graphics::MultiplyMatrixVector(mat3x3& m, fPoint2D& v)
+{
+	fPoint2D v1;
+
+	v1.x = v.x * m.m[0][0] + v.y * m.m[1][0] + v.w * m.m[2][0];
+	v1.y = v.x * m.m[0][1] + v.y * m.m[1][1] + v.w * m.m[2][1];
+	v1.w = v.x * m.m[0][2] + v.y * m.m[1][2] + v.w * m.m[2][2];
+
+	return v1;
+}
+
+Graphics::fPoint3D Graphics::MultiplyMatrixVector(mat4x4& m, fPoint3D& v)
+{
+	fPoint3D v1;
+
+	v1.x = v.x * m.m[0][0] + v.y * m.m[1][0] + v.z * m.m[2][0] + v.w * m.m[3][0];
+	v1.y = v.x * m.m[0][1] + v.y * m.m[1][1] + v.z * m.m[2][1] + v.w * m.m[3][1];
+	v1.z = v.x * m.m[0][2] + v.y * m.m[1][2] + v.z * m.m[2][2] + v.w * m.m[3][2];
+	v1.w = v.x * m.m[0][3] + v.y * m.m[1][3] + v.z * m.m[2][3] + v.w * m.m[3][3];
+
+	return v1;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MakeIdentity()
+{
+	mat4x4 matrix;
+	matrix.m[0][0] = 1.0f;
+	matrix.m[1][1] = 1.0f;
+	matrix.m[2][2] = 1.0f;
+	matrix.m[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MakeRotationX(float fAngleRad)
+{
+	mat4x4 matrix;
+	matrix.m[0][0] = 1.0f;
+	matrix.m[1][1] = cosf(fAngleRad);
+	matrix.m[1][2] = sinf(fAngleRad);
+	matrix.m[2][1] = -sinf(fAngleRad);
+	matrix.m[2][2] = cosf(fAngleRad);
+	matrix.m[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MakeRotationY(float fAngleRad)
+{
+	mat4x4 matrix;
+	matrix.m[0][0] = cosf(fAngleRad);
+	matrix.m[0][2] = sinf(fAngleRad);
+	matrix.m[2][0] = -sinf(fAngleRad);
+	matrix.m[1][1] = 1.0f;
+	matrix.m[2][2] = cosf(fAngleRad);
+	matrix.m[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MakeRotationZ(float fAngleRad)
+{
+	mat4x4 matrix;
+	matrix.m[0][0] = cosf(fAngleRad);
+	matrix.m[0][1] = sinf(fAngleRad);
+	matrix.m[1][0] = -sinf(fAngleRad);
+	matrix.m[1][1] = cosf(fAngleRad);
+	matrix.m[2][2] = 1.0f;
+	matrix.m[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MakeTranslation(float x, float y, float z)
+{
+	mat4x4 matrix;
+	matrix.m[0][0] = 1.0f;
+	matrix.m[1][1] = 1.0f;
+	matrix.m[2][2] = 1.0f;
+	matrix.m[3][3] = 1.0f;
+	matrix.m[3][0] = x;
+	matrix.m[3][1] = y;
+	matrix.m[3][2] = z;
+	return matrix;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MakeProjection(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
+{
+	float fFovRad = 1.0f / tanf(fFovDegrees * 0.5f / 180.0f * PI);
+	mat4x4 matrix;
+	matrix.m[0][0] = fAspectRatio * fFovRad;
+	matrix.m[1][1] = fFovRad;
+	matrix.m[2][2] = fFar / (fFar - fNear);
+	matrix.m[3][2] = (-fFar * fNear) / (fFar - fNear);
+	matrix.m[2][3] = 1.0f;
+	matrix.m[3][3] = 0.0f;
+	return matrix;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MultiplyMatrix(mat4x4& m1, mat4x4& m2)
+{
+	mat4x4 matrix;
+	for (int16_t c = 0; c < 4; c++)
+		for (int16_t r = 0; r < 4; r++)
+			matrix.m[r][c] = m1.m[r][0] * m2.m[0][c] + m1.m[r][1] * m2.m[1][c] + m1.m[r][2] * m2.m[2][c] + m1.m[r][3] * m2.m[3][c];
+	return matrix;
 }
