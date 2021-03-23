@@ -241,7 +241,7 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 
 		while (x != x2)
 		{
-			Draw(x, y, ' ', BG_WHITE);
+			Draw(x, y, c, col);
 			if (balance >= 0)
 			{
 				y += signY;
@@ -252,7 +252,7 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 			x += signX;
 		}
 
-		Draw(x, y, ' ', BG_WHITE);
+		Draw(x, y, c, col);
 	}
 
 	else								// Similarly for axis [Y>X]
@@ -307,7 +307,8 @@ void Graphics::Clip(int16_t& x, int16_t& y)
 	else if (y >= iConsoleHeight) y = iConsoleHeight;
 }
 
-void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c, int16_t col)
+void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c, int16_t col, int16_t y_min, int16_t y_max,
+	int16_t x_min, int16_t x_max)
 {
 	std::vector<iEdgeScanLine> edges(points.size());
 	int16_t min_y, max_y;
@@ -332,6 +333,15 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 			min_y = edges[i].y2;
 	}
 
+	// For Warnock Algorithm
+	y_min = (y_min == -1) ? 0 : y_min;
+	y_max = (y_max == -1) ? iConsoleHeight : y_max;
+	x_min = (x_min == -1) ? 0 : x_min;
+	x_max = (x_max == -1) ? iConsoleWidth : x_max;
+
+	min_y = (min_y < y_min) ? y_min : min_y;
+	max_y = (max_y > y_max) ? y_max : max_y;
+
 
 	for (int16_t y = min_y; y < max_y; y++)
 	{
@@ -342,6 +352,13 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 				// Count X
 				scanex.push_back(edges[i].x1 + edges[i].del_xy * (y - edges[i].y1));
 			}
+
+			// if edge == y
+			else if (edges[i].y1 == y && edges[i].y2 == y)
+			{
+				scanex.push_back(edges[i].x1);
+				scanex.push_back(edges[i].x2);
+			}
 		}
 
 		if (scanex.size())
@@ -350,7 +367,12 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 
 			for (size_t i = 0; i < scanex.size() - 1; i += 2)
 			{
-				DrawLineBresenham(scanex[i], y, scanex[i + 1], y, c, col);
+				int16_t x1, x2;
+				x1 = (scanex[i] < x_min) ? x_min : scanex[i];
+				x2 = (scanex[i + 1] > x_max) ? x_max : scanex[i + 1];
+
+				DrawLineBresenham(x1, y, x2, y, c, col);
+				//DrawLineBresenham(scanex[i], y, scanex[i + 1], y, c, col);
 			}
 
 			scanex.clear();
@@ -380,7 +402,7 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 	CHAR_INFO* console_ptr = nullptr;
 
 
-	Draw(center.x, center.y);
+	Draw(center.x, center.y, c, col);
 
 	// lambda for checking edges of screen
 	auto on_screen = [this](int16_t x, int16_t y)
@@ -402,7 +424,7 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 			&& on_screen(temp.x, temp.y - 1.0f))
 		{
 			queue.push(std::move(fPoint2D(temp.x, temp.y - 1.0f)));
-			Draw(temp.x, temp.y - 1.0f);
+			Draw(temp.x, temp.y - 1.0f, c, col);
 		}
 
 		// Bottom
@@ -410,7 +432,7 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 			&& on_screen(temp.x, temp.y + 1.0f))
 		{
 			queue.push(std::move(fPoint2D(temp.x, temp.y + 1.0f)));
-			Draw(temp.x, temp.y + 1.0f);
+			Draw(temp.x, temp.y + 1.0f, c, col);
 		}
 
 		// Left
@@ -418,7 +440,7 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 			&& on_screen(temp.x - 1.0f, temp.y))
 		{
 			queue.push(std::move(fPoint2D(temp.x - 1.0f, temp.y)));
-			Draw(temp.x - 1.0f, temp.y);
+			Draw(temp.x - 1.0f, temp.y, c, col);
 		}
 
 		// Right
@@ -426,7 +448,7 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 			&& on_screen(temp.x + 1.0f, temp.y))
 		{
 			queue.push(std::move(fPoint2D(temp.x + 1.0f, temp.y)));
-			Draw(temp.x + 1.0f, temp.y);
+			Draw(temp.x + 1.0f, temp.y, c, col);
 		}
 	}
 }
@@ -539,6 +561,243 @@ bool Graphics::ScalingPolygons(std::vector<fPoint2D>& points, float k)
 	return true;
 }
 
+void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D tl_corner,
+	fPoint3D tr_corner, fPoint3D bl_corner, fPoint3D br_corner)
+{
+	// We need to find relationships of our screen and polygons
+
+	// For more info:
+		// https://geomalgorithms.com/a03-_inclusion.html
+		// https://stackoverflow.com/questions/27589796/check-point-within-polygon
+// This function determines number of intersections with polygon
+	auto crossing_number = [&](triangle tr, fPoint3D point)
+	{
+		int16_t cn = 0;    // the  crossing number counter
+		int16_t i = 0;
+
+		do
+		{
+			int16_t next = (i + 1) % 3;
+
+			if ((tr.p[i].y <= point.y && (tr.p[next].y > point.y)) || 
+				((tr.p[i].y > point.y) && (tr.p[next].y <= point.y)))
+			{
+				float vt = (point.y - tr.p[i].y) / (tr.p[next].y - tr.p[i].y);
+				if (point.x < tr.p[i].x + vt * (tr.p[next].x - tr.p[i].x))
+					++cn;
+			}
+
+			i = next;
+
+		} while (i != 0);
+
+		return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
+	};
+
+
+// Find intersections between two segments
+	// https://www.youtube.com/watch?v=bbTqI0oqL5U&t=596s&ab_channel=TECHDOSE
+	auto onSegment = [&](fPoint3D p, fPoint3D q, fPoint3D r)
+	{
+		if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
+			q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
+			return true;
+
+		return false;
+	};
+
+	// To find orientation of ordered triplet (p, q, r). 
+	// The function returns following values 
+	// 0 --> p, q and r are colinear 
+	// 1 --> Clockwise 
+	// 2 --> Counterclockwise 
+	auto orientation = [&](fPoint3D p, fPoint3D q, fPoint3D r)
+	{
+		// See https://www.geeksforgeeks.org/orientation-3-ordered-points/ 
+		// for details of below formula. 
+		int16_t val = (q.y - p.y) * (r.x - q.x) -
+			(q.x - p.x) * (r.y - q.y);
+
+		if (val == 0) return 0;			// colinear 
+
+		return (val > 0) ? 1 : 2;		// clock or counterclock wise 
+	};
+
+	// The main function that returns true if line segment 'p1q1' 
+	// and 'p2q2' intersect. 
+	auto doIntersect = [&](fPoint3D p1, fPoint3D q1, fPoint3D p2, fPoint3D q2)
+	{
+		// Find the four orientations needed for general and 
+		// special cases 
+		int16_t o1 = orientation(p1, q1, p2);
+		int16_t o2 = orientation(p1, q1, q2);
+		int16_t o3 = orientation(p2, q2, p1);
+		int16_t o4 = orientation(p2, q2, q1);
+
+		// General case 
+		if (o1 != o2 && o3 != o4)
+			return true;
+
+		// Special Cases 
+		// p1, q1 and p2 are colinear and p2 lies on segment p1q1 
+		if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+
+		// p1, q1 and q2 are colinear and q2 lies on segment p1q1 
+		if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+
+		// p2, q2 and p1 are colinear and p1 lies on segment p2q2 
+		if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+
+		// p2, q2 and q1 are colinear and q1 lies on segment p2q2 
+		if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+		return false; // Doesn't fall in any of the above cases 
+	};
+
+// lambda for checking edges of screen
+	auto on_screen = [&](triangle tr)
+	{
+		int16_t count_point = 0;
+
+		if (crossing_number(tr, tl_corner)) count_point++;
+		if (crossing_number(tr, tr_corner)) count_point++;
+		if (crossing_number(tr, bl_corner)) count_point++;
+		if (crossing_number(tr, br_corner)) count_point++;
+
+		if (count_point == 4)							// Surrounding polygon
+			return true;
+
+		for (int16_t i = 0; i < 3; i++)					// One point on screen or more
+		{
+			if (tr.p[i].x >= tl_corner.x && tr.p[i].x <= tr_corner.x && tr.p[i].y >= tl_corner.y && tr.p[i].y <= bl_corner.y)
+				return true;
+		}
+
+
+		int16_t i = 0;
+
+		do
+		{
+			int16_t next = (i + 1) % 3;
+
+			if (doIntersect(tr.p[i], tr.p[next], tl_corner, tr_corner)) return true;
+
+			if (doIntersect(tr.p[i], tr.p[next], tl_corner, bl_corner)) return true;
+
+			if (doIntersect(tr.p[i], tr.p[next], bl_corner, br_corner)) return true;
+
+			if (doIntersect(tr.p[i], tr.p[next], tr_corner, br_corner)) return true;
+
+			i = next;
+		} while (i!=0);
+		
+
+		return false;
+	};
+
+	// Show net
+	//DrawLineBresenham(tl_corner.x, tl_corner.y, tr_corner.x, tr_corner.y, PIXEL_SOLID, FG_GREY);
+	//DrawLineBresenham(tl_corner.x, tl_corner.y, bl_corner.x, bl_corner.y, PIXEL_SOLID, FG_GREY);
+	//DrawLineBresenham(tr_corner.x, tr_corner.y, br_corner.x, br_corner.y, PIXEL_SOLID, FG_GREY);
+	//DrawLineBresenham(bl_corner.x, bl_corner.y, br_corner.x, br_corner.y, PIXEL_SOLID, FG_GREY);
+
+
+	// Delete all disjoin polygons
+	std::vector<triangle> tempTriangles;
+
+	for (auto& tri : vecTrianglesToRaster)
+	{
+		if (on_screen(tri))
+			tempTriangles.push_back(tri);
+	}
+
+	// Main algorithm
+
+	if (tempTriangles.empty())					// If all polygons were disjoined
+		return;
+	else if (tempTriangles.size() == 1)			// If only one polygon
+	{
+		std::vector<fPoint2D> points(3);
+		for (int16_t i = 0; i < 3; i++)
+		{
+			points[i].x = tempTriangles.front().p[i].x;
+			points[i].y = tempTriangles.front().p[i].y;
+		}
+
+		ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, tl_corner.y, bl_corner.y, tl_corner.x, tr_corner.x);
+	}
+	else if (tempTriangles.size() > 1 && (tr_corner.x - tl_corner.x) > 1.0f && (bl_corner.y - tl_corner.y) > 1.0f)
+	{
+		int16_t count_point = 0;
+
+		if (crossing_number(tempTriangles.front(), tl_corner)) count_point++;
+		if (crossing_number(tempTriangles.front(), tr_corner)) count_point++;
+		if (crossing_number(tempTriangles.front(), bl_corner)) count_point++;
+		if (crossing_number(tempTriangles.front(), br_corner)) count_point++;
+
+		if (count_point == 4)							// Surrounding polygon
+		{
+			ClearConsole((int16_t)tl_corner.x, (int16_t)tl_corner.y, (int16_t)br_corner.x, (int16_t)br_corner.y, PIXEL_SOLID, FG_BLUE);
+		}
+														// Split into windows
+		else
+		{
+			tempTriangles.clear();
+
+			// Top Left
+			WarnockAlgorithm(vecTrianglesToRaster, tl_corner, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tr_corner.y, 0.0f),
+				fPoint3D(bl_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
+				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f));
+			// Top Right
+			WarnockAlgorithm(vecTrianglesToRaster, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y, 0.0f), tr_corner,
+				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
+				fPoint3D(br_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f));
+			// Bottom Left
+			WarnockAlgorithm(vecTrianglesToRaster, fPoint3D(tl_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
+				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
+				bl_corner, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), br_corner.y, 0.0f));
+			// Bottom Right
+			WarnockAlgorithm(vecTrianglesToRaster, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
+				fPoint3D(tr_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
+				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), br_corner.y, 0.0f), br_corner);
+		}
+	}
+	else
+	{
+		// Need to rework this part
+
+		std::vector<triangle> t;
+
+		t.push_back(std::move(tempTriangles.front()));
+		tempTriangles.erase(tempTriangles.begin());
+
+		float tz = t[0].p[0].z + t[0].p[1].z + t[0].p[2].z;
+
+		float _z = 0.0f;
+		for (auto& tri : tempTriangles)
+		{
+			_z = tri.p[0].z + tri.p[1].z + tri.p[2].z;
+			if (tz == _z)
+				t.push_back(std::move(tri));
+		}
+
+		for (auto& tri : t)
+		{
+			std::vector<fPoint2D> points(3);
+			for (int16_t i = 0; i < 3; i++)
+			{
+				points[i].x = tri.p[i].x;
+				points[i].y = tri.p[i].y;
+			}
+
+			
+			ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, tl_corner.y, bl_corner.y, tl_corner.x, tr_corner.x);
+			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, & rectWindow);
+			//DrawPolygons(points, PIXEL_SOLID, FG_MAGENTA);
+		}
+	}
+}
+
 void Graphics::MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m)
 {
 	for (auto& point : points)
@@ -638,6 +897,16 @@ Graphics::mat4x4 Graphics::Matrix_MakeRotationZ(float fAngleRad)
 	matrix.m[1][0] = -sinf(fAngleRad);
 	matrix.m[1][1] = cosf(fAngleRad);
 	matrix.m[2][2] = 1.0f;
+	matrix.m[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::mat4x4 Graphics::Matrix_MakeScale(float x, float y, float z)
+{
+	mat4x4 matrix;
+	matrix.m[0][0] = x;
+	matrix.m[1][1] = y;
+	matrix.m[2][2] = z;
 	matrix.m[3][3] = 1.0f;
 	return matrix;
 }

@@ -124,6 +124,8 @@ public:
 	// Drawing variables & structures
 protected:
 		// Structs for 2D graphics
+	struct fPoint3D;
+
 	struct mat3x3
 	{
 		float m[3][3] = { 0 };
@@ -139,6 +141,13 @@ protected:
 		fPoint2D(float x, float y, float w = 1.0f): x(x), y(y), w(w) {}
 
 		fPoint2D& operator=(const fPoint2D& obj)
+		{
+			x = obj.x;
+			y = obj.y;
+			w = obj.w;
+			return *this;
+		}
+		fPoint2D& operator=(const fPoint3D& obj)
 		{
 			x = obj.x;
 			y = obj.y;
@@ -221,6 +230,15 @@ protected:
 	struct mat4x4
 	{
 		float m[4][4] = { 0 };
+
+		mat4x4 operator*(mat4x4& _m)
+		{
+			mat4x4 matrix;
+			for (int16_t c = 0; c < 4; c++)
+				for (int16_t r = 0; r < 4; r++)
+					matrix.m[r][c] = m[r][0] * _m.m[0][c] + m[r][1] * _m.m[1][c] + m[r][2] * _m.m[2][c] + m[r][3] * _m.m[3][c];
+			return matrix;
+		}
 	};
 	struct fPoint3D										// Point struct, which have X,Y coords
 	{
@@ -235,6 +253,14 @@ protected:
 			x = obj.x;
 			y = obj.y;
 			z = obj.z;
+			w = obj.w;
+			return *this;
+		}
+		fPoint3D& operator=(const fPoint2D& obj)
+		{
+			x = obj.x;
+			y = obj.y;
+			z = 0.0f;
 			w = obj.w;
 			return *this;
 		}
@@ -288,6 +314,7 @@ protected:
 	{
 		fPoint3D p[3];
 
+		triangle() {};
 		triangle(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3)
 		{
 			p[0].x = x1; p[0].y = y1; p[0].z = z1;
@@ -312,7 +339,8 @@ public:
 	void ClearConsole(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c = PIXEL_SOLID, int16_t col = FG_BLACK);
 	void Clip(int16_t& x, int16_t& y);
 
-	void ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE);
+	void ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE,
+		int16_t y_min = -1, int16_t y_max = -1, int16_t x_min = -1, int16_t x_max = -1);
 	void ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t c = ' ', 
 		int16_t col = BG_WHITE, int16_t col_edges = BG_WHITE);
 
@@ -325,6 +353,9 @@ public:
 
 	bool ScalingLine(fPoint2D& point1, fPoint2D& point2, float k);
 	bool ScalingPolygons(std::vector<fPoint2D>& points, float k);
+
+	void WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D tl_corner,
+		fPoint3D tr_corner, fPoint3D bl_corner, fPoint3D br_corner);
 
 	void MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m);
 
@@ -342,10 +373,10 @@ public:
 	mat4x4 Matrix_MakeRotationX(float fAngleRad);
 	mat4x4 Matrix_MakeRotationY(float fAngleRad);
 	mat4x4 Matrix_MakeRotationZ(float fAngleRad);
+	mat4x4 Matrix_MakeScale(float x, float y, float z);
 	mat4x4 Matrix_MakeTranslation(float x, float y, float z);
 	mat4x4 Matrix_MakeProjection(float fFovDegrees, float fAspectRatio, float fNear, float fFar);
 	mat4x4 Matrix_MultiplyMatrix(mat4x4& m1, mat4x4& m2);
-	
 };
 
 #endif // !_GRAPHICS_H_
