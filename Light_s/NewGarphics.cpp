@@ -129,7 +129,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 	mat4x4 matRotX, matRotY, matRotZ;
 	matRotX = Matrix_MakeRotationX(fThetaX * 0.5f);
 	matRotY = Matrix_MakeRotationY(fThetaY * 0.5f);
-	matRotZ = Matrix_MakeRotationZ(fThetaZ);
+	matRotZ = Matrix_MakeRotationZ(fThetaZ * 0.5f);
 
 	mat4x4 ScalingMatrix;
 	ScalingMatrix = Matrix_MakeScale(scale, scale, scale);
@@ -184,18 +184,17 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 				return z1 < z2;
 			});
 
-		/*for (auto& tri : vecTrianglesToRaster)
+		for (auto& tri : vecTrianglesToRaster)
 		{
 			for (int16_t i = 0; i < 3; i++)
 			{
 				tri.p[i].x = roundf(tri.p[i].x);
 				tri.p[i].y = roundf(tri.p[i].y);
 			}
-		}*/
+		}
 
 
-		WarnockAlgorithm(vecTrianglesToRaster, fPoint3D(0.0f, 0.0f, 0.0f), fPoint3D(iConsoleWidth, 0.0f, 0.0f),
-			fPoint3D(0.0f, iConsoleHeight, 0.0f), fPoint3D(iConsoleWidth, iConsoleHeight, 0.0f));
+		WarnockAlgorithm(vecTrianglesToRaster, 0.0f, iConsoleWidth - 1, 0.0f, iConsoleHeight - 1);
 
 		//for (auto& tri : vecTrianglesToRaster)
 		//{

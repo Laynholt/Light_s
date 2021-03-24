@@ -354,8 +354,8 @@ public:
 	bool ScalingLine(fPoint2D& point1, fPoint2D& point2, float k);
 	bool ScalingPolygons(std::vector<fPoint2D>& points, float k);
 
-	void WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D tl_corner,
-		fPoint3D tr_corner, fPoint3D bl_corner, fPoint3D br_corner);
+	void WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, float _left_x,
+		float _right_x, float _top_y, float _bottom_y);
 
 	void MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m);
 

@@ -293,8 +293,8 @@ void Graphics::ClearConsole(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int1
 {
 	Clip(x1, y1);
 	Clip(x2, y2);
-	for (int16_t x = x1; x < x2; x++)
-		for (int16_t y = y1; y < y2; y++)
+	for (int16_t x = x1; x <= x2; x++)
+		for (int16_t y = y1; y <= y2; y++)
 			Draw(x, y, c, col);
 }
 
@@ -561,8 +561,8 @@ bool Graphics::ScalingPolygons(std::vector<fPoint2D>& points, float k)
 	return true;
 }
 
-void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D tl_corner,
-	fPoint3D tr_corner, fPoint3D bl_corner, fPoint3D br_corner)
+void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, float _left_x,
+	float _right_x, float _top_y, float _bottom_y)
 {
 	// We need to find relationships of our screen and polygons
 
@@ -570,7 +570,7 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 		// https://geomalgorithms.com/a03-_inclusion.html
 		// https://stackoverflow.com/questions/27589796/check-point-within-polygon
 // This function determines number of intersections with polygon
-	auto crossing_number = [&](triangle tr, fPoint3D point)
+	auto crossing_number = [&](triangle tr, float _x, float _y)
 	{
 		int16_t cn = 0;    // the  crossing number counter
 		int16_t i = 0;
@@ -579,11 +579,11 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 		{
 			int16_t next = (i + 1) % 3;
 
-			if ((tr.p[i].y <= point.y && (tr.p[next].y > point.y)) || 
-				((tr.p[i].y > point.y) && (tr.p[next].y <= point.y)))
+			if (((tr.p[i].y <= _y) && (tr.p[next].y > _y)) || 
+				((tr.p[i].y > _y) && (tr.p[next].y <= _y)))
 			{
-				float vt = (point.y - tr.p[i].y) / (tr.p[next].y - tr.p[i].y);
-				if (point.x < tr.p[i].x + vt * (tr.p[next].x - tr.p[i].x))
+				float vt = (_y - tr.p[i].y) / (tr.p[next].y - tr.p[i].y);
+				if (_x < tr.p[i].x + vt * (tr.p[next].x - tr.p[i].x))
 					++cn;
 			}
 
@@ -659,34 +659,35 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 	{
 		int16_t count_point = 0;
 
-		if (crossing_number(tr, tl_corner)) count_point++;
-		if (crossing_number(tr, tr_corner)) count_point++;
-		if (crossing_number(tr, bl_corner)) count_point++;
-		if (crossing_number(tr, br_corner)) count_point++;
+		if (crossing_number(tr, _left_x, _top_y)) count_point++;
+		if (crossing_number(tr, _right_x, _top_y)) count_point++;
+		if (crossing_number(tr, _left_x, _bottom_y)) count_point++;
+		if (crossing_number(tr, _right_x, _bottom_y)) count_point++;
 
 		if (count_point == 4)							// Surrounding polygon
 			return true;
 
 		for (int16_t i = 0; i < 3; i++)					// One point on screen or more
 		{
-			if (tr.p[i].x >= tl_corner.x && tr.p[i].x <= tr_corner.x && tr.p[i].y >= tl_corner.y && tr.p[i].y <= bl_corner.y)
+			if (tr.p[i].x >= _left_x && tr.p[i].x <= _right_x && tr.p[i].y >= _top_y && tr.p[i].y <= _bottom_y)
 				return true;
 		}
 
 
 		int16_t i = 0;
+		fPoint3D p1(_left_x, _top_y, 0.0f);
+		fPoint3D p2(_right_x, _top_y, 0.0f);
+		fPoint3D p3(_left_x, _bottom_y, 0.0f);
+		fPoint3D p4(_right_x, _bottom_y, 0.0f);
 
 		do
 		{
 			int16_t next = (i + 1) % 3;
 
-			if (doIntersect(tr.p[i], tr.p[next], tl_corner, tr_corner)) return true;
-
-			if (doIntersect(tr.p[i], tr.p[next], tl_corner, bl_corner)) return true;
-
-			if (doIntersect(tr.p[i], tr.p[next], bl_corner, br_corner)) return true;
-
-			if (doIntersect(tr.p[i], tr.p[next], tr_corner, br_corner)) return true;
+			if (doIntersect(tr.p[i], tr.p[next], p1, p2)) return true;
+			if (doIntersect(tr.p[i], tr.p[next], p1, p3)) return true;
+			if (doIntersect(tr.p[i], tr.p[next], p2, p4)) return true;
+			if (doIntersect(tr.p[i], tr.p[next], p3, p4)) return true;
 
 			i = next;
 		} while (i!=0);
@@ -696,10 +697,10 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 	};
 
 	// Show net
-	//DrawLineBresenham(tl_corner.x, tl_corner.y, tr_corner.x, tr_corner.y, PIXEL_SOLID, FG_GREY);
-	//DrawLineBresenham(tl_corner.x, tl_corner.y, bl_corner.x, bl_corner.y, PIXEL_SOLID, FG_GREY);
-	//DrawLineBresenham(tr_corner.x, tr_corner.y, br_corner.x, br_corner.y, PIXEL_SOLID, FG_GREY);
-	//DrawLineBresenham(bl_corner.x, bl_corner.y, br_corner.x, br_corner.y, PIXEL_SOLID, FG_GREY);
+	/*DrawLineBresenham(_left_x, _top_y, _right_x, _top_y, PIXEL_SOLID, FG_GREY);
+	DrawLineBresenham(_left_x, _top_y, _left_x, _bottom_y, PIXEL_SOLID, FG_GREY);
+	DrawLineBresenham(_left_x, _bottom_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
+	DrawLineBresenham(_right_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);*/
 
 
 	// Delete all disjoin polygons
@@ -724,64 +725,77 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 			points[i].y = tempTriangles.front().p[i].y;
 		}
 
-		ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, tl_corner.y, bl_corner.y, tl_corner.x, tr_corner.x);
+		ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, _top_y, _bottom_y, _left_x, _right_x);
 	}
-	else if (tempTriangles.size() > 1 && (tr_corner.x - tl_corner.x) > 1.0f && (bl_corner.y - tl_corner.y) > 1.0f)
+	else if (tempTriangles.size() > 1 && (_right_x - _left_x) > 1.0f && (_bottom_y - _top_y) > 1.0f)
 	{
 		int16_t count_point = 0;
 
-		if (crossing_number(tempTriangles.front(), tl_corner)) count_point++;
-		if (crossing_number(tempTriangles.front(), tr_corner)) count_point++;
-		if (crossing_number(tempTriangles.front(), bl_corner)) count_point++;
-		if (crossing_number(tempTriangles.front(), br_corner)) count_point++;
+		if (crossing_number(tempTriangles.front(), _left_x, _top_y)) count_point++;
+		if (crossing_number(tempTriangles.front(), _right_x, _top_y)) count_point++;
+		if (crossing_number(tempTriangles.front(), _left_x, _bottom_y)) count_point++;
+		if (crossing_number(tempTriangles.front(), _right_x, _bottom_y)) count_point++;
 
 		if (count_point == 4)							// Surrounding polygon
 		{
-			ClearConsole((int16_t)tl_corner.x, (int16_t)tl_corner.y, (int16_t)br_corner.x, (int16_t)br_corner.y, PIXEL_SOLID, FG_BLUE);
+			ClearConsole(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
+			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, & rectWindow);
 		}
 														// Split into windows
 		else
 		{
 			tempTriangles.clear();
 
+			float dx = (_right_x - _left_x) / 2;
+			float dy = (_bottom_y - _top_y) / 2;
+
+
 			// Top Left
-			WarnockAlgorithm(vecTrianglesToRaster, tl_corner, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tr_corner.y, 0.0f),
-				fPoint3D(bl_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
-				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f));
+			WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y, _top_y + roundf(dy));
+				
 			// Top Right
-			WarnockAlgorithm(vecTrianglesToRaster, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y, 0.0f), tr_corner,
-				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
-				fPoint3D(br_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f));
+			WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y, _top_y + roundf(dy));
+				
 			// Bottom Left
-			WarnockAlgorithm(vecTrianglesToRaster, fPoint3D(tl_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
-				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
-				bl_corner, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), br_corner.y, 0.0f));
+			WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y + roundf(dy), _bottom_y);
+				
 			// Bottom Right
-			WarnockAlgorithm(vecTrianglesToRaster, fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
-				fPoint3D(tr_corner.x, tl_corner.y + roundf((bl_corner.y - tl_corner.y) / 2), 0.0f),
-				fPoint3D(tl_corner.x + roundf((tr_corner.x - tl_corner.x) / 2), br_corner.y, 0.0f), br_corner);
+			WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y + roundf(dy), _bottom_y);
 		}
 	}
 	else
 	{
-		// Need to rework this part
+		// Need to repear some dioganals when press WED
 
-		std::vector<triangle> t;
+		std::vector<triangle> visible_tris;
 
-		t.push_back(std::move(tempTriangles.front()));
-		tempTriangles.erase(tempTriangles.begin());
+		float min_z = tempTriangles.front().p[0].z;
 
-		float tz = t[0].p[0].z + t[0].p[1].z + t[0].p[2].z;
-
-		float _z = 0.0f;
 		for (auto& tri : tempTriangles)
 		{
-			_z = tri.p[0].z + tri.p[1].z + tri.p[2].z;
-			if (tz == _z)
-				t.push_back(std::move(tri));
+			for (int16_t i = 0; i < 3; i++)
+			{
+				if (min_z > tri.p[i].z)
+					min_z = tri.p[i].z;
+			}
 		}
 
-		for (auto& tri : t)
+		visible_tris.push_back(std::move(tempTriangles.front()));
+		tempTriangles.erase(tempTriangles.begin());
+
+		for (auto& tri : tempTriangles)
+		{
+			for (int16_t i = 0; i < 3; i++)
+			{
+				if (fabs(tri.p[i].z - min_z) < 0.00001f)
+				{
+					visible_tris.push_back(std::move(tri));
+					break;
+				}
+			}
+		}
+
+		for (auto& tri : visible_tris)
 		{
 			std::vector<fPoint2D> points(3);
 			for (int16_t i = 0; i < 3; i++)
@@ -791,7 +805,7 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 			}
 
 			
-			ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, tl_corner.y, bl_corner.y, tl_corner.x, tr_corner.x);
+			ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, _top_y, _bottom_y, _left_x, _right_x);
 			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, & rectWindow);
 			//DrawPolygons(points, PIXEL_SOLID, FG_MAGENTA);
 		}
