@@ -153,24 +153,24 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			triangle triProjected, triTransformed;
 			
 
-			triTransformed.p[0] = MultiplyMatrixVector(WorldMatrix, tri.p[0]);
-			triTransformed.p[1] = MultiplyMatrixVector(WorldMatrix, tri.p[1]);
-			triTransformed.p[2] = MultiplyMatrixVector(WorldMatrix, tri.p[2]);
+			triTransformed.points[0] = MultiplyMatrixVector(WorldMatrix, tri.points[0]);
+			triTransformed.points[1] = MultiplyMatrixVector(WorldMatrix, tri.points[1]);
+			triTransformed.points[2] = MultiplyMatrixVector(WorldMatrix, tri.points[2]);
 
 
 			// Переводим треугольники из 3D --> 2D
-			triProjected.p[0] = MultiplyMatrixVector(matProj, triTransformed.p[0]);
-			triProjected.p[1] = MultiplyMatrixVector(matProj, triTransformed.p[1]);
-			triProjected.p[2] = MultiplyMatrixVector(matProj, triTransformed.p[2]);
+			triProjected.points[0] = MultiplyMatrixVector(matProj, triTransformed.points[0]);
+			triProjected.points[1] = MultiplyMatrixVector(matProj, triTransformed.points[1]);
+			triProjected.points[2] = MultiplyMatrixVector(matProj, triTransformed.points[2]);
 
 			// Масштабируем под размер консоли
 			for (int16_t i = 0; i < 3; i++)
 			{
-				triProjected.p[i].x += _x + t;
-				triProjected.p[i].y += _y;
+				triProjected.points[i].x += _x + t;
+				triProjected.points[i].y += _y;
 
-				triProjected.p[i].x *= 0.3f * (float)GetConsoleWidth();
-				triProjected.p[i].y *= 0.3f * (float)GetConsoleHeight();
+				triProjected.points[i].x *= 0.3f * (float)GetConsoleWidth();
+				triProjected.points[i].y *= 0.3f * (float)GetConsoleHeight();
 			}
 
 			vecTrianglesToRaster.push_back(triProjected);
@@ -179,8 +179,8 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 		// Sort triangles from back to front
 		std::sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle& t1, triangle& t2)
 			{
-				float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
-				float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
+				float z1 = (t1.points[0].z + t1.points[1].z + t1.points[2].z) / 3.0f;
+				float z2 = (t2.points[0].z + t2.points[1].z + t2.points[2].z) / 3.0f;
 				return z1 < z2;
 			});
 
@@ -188,8 +188,8 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 		{
 			for (int16_t i = 0; i < 3; i++)
 			{
-				tri.p[i].x = roundf(tri.p[i].x);
-				tri.p[i].y = roundf(tri.p[i].y);
+				tri.points[i].x = roundf(tri.points[i].x);
+				tri.points[i].y = roundf(tri.points[i].y);
 			}
 		}
 

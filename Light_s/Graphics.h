@@ -312,14 +312,14 @@ protected:
 	};
 	struct triangle
 	{
-		fPoint3D p[3];
+		fPoint3D points[3];
 
 		triangle() {};
 		triangle(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3)
 		{
-			p[0].x = x1; p[0].y = y1; p[0].z = z1;
-			p[1].x = x2; p[1].y = y2; p[1].z = z2;
-			p[2].x = x3; p[2].y = y3; p[2].z = z3;
+			points[0].x = x1; points[0].y = y1; points[0].z = z1;
+			points[1].x = x2; points[1].y = y2; points[1].z = z2;
+			points[2].x = x3; points[2].y = y3; points[2].z = z3;
 		}
 	};
 

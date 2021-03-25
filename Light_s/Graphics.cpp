@@ -579,11 +579,11 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 		{
 			int16_t next = (i + 1) % 3;
 
-			if (((tr.p[i].y <= _y) && (tr.p[next].y > _y)) || 
-				((tr.p[i].y > _y) && (tr.p[next].y <= _y)))
+			if (((tr.points[i].y <= _y) && (tr.points[next].y > _y)) ||
+				((tr.points[i].y > _y) && (tr.points[next].y <= _y)))
 			{
-				float vt = (_y - tr.p[i].y) / (tr.p[next].y - tr.p[i].y);
-				if (_x < tr.p[i].x + vt * (tr.p[next].x - tr.p[i].x))
+				float vt = (_y - tr.points[i].y) / (tr.points[next].y - tr.points[i].y);
+				if (_x < tr.points[i].x + vt * (tr.points[next].x - tr.points[i].x))
 					++cn;
 			}
 
@@ -595,8 +595,8 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	};
 
 
-// Find intersections between two segments
-	// https://www.youtube.com/watch?v=bbTqI0oqL5U&t=596s&ab_channel=TECHDOSE
+	// Find intersections between two segments
+		// https://www.youtube.com/watch?v=bbTqI0oqL5U&t=596s&ab_channel=TECHDOSE
 	auto onSegment = [&](fPoint3D p, fPoint3D q, fPoint3D r)
 	{
 		if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
@@ -654,7 +654,7 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 		return false; // Doesn't fall in any of the above cases 
 	};
 
-// lambda for checking edges of screen
+	// lambda for checking edges of screen
 	auto on_screen = [&](triangle tr)
 	{
 		int16_t count_point = 0;
@@ -669,7 +669,7 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 
 		for (int16_t i = 0; i < 3; i++)					// One point on screen or more
 		{
-			if (tr.p[i].x >= _left_x && tr.p[i].x <= _right_x && tr.p[i].y >= _top_y && tr.p[i].y <= _bottom_y)
+			if (tr.points[i].x >= _left_x && tr.points[i].x <= _right_x && tr.points[i].y >= _top_y && tr.points[i].y <= _bottom_y)
 				return true;
 		}
 
@@ -684,14 +684,14 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 		{
 			int16_t next = (i + 1) % 3;
 
-			if (doIntersect(tr.p[i], tr.p[next], p1, p2)) return true;
-			if (doIntersect(tr.p[i], tr.p[next], p1, p3)) return true;
-			if (doIntersect(tr.p[i], tr.p[next], p2, p4)) return true;
-			if (doIntersect(tr.p[i], tr.p[next], p3, p4)) return true;
+			if (doIntersect(tr.points[i], tr.points[next], p1, p2)) return true;
+			if (doIntersect(tr.points[i], tr.points[next], p1, p3)) return true;
+			if (doIntersect(tr.points[i], tr.points[next], p2, p4)) return true;
+			if (doIntersect(tr.points[i], tr.points[next], p3, p4)) return true;
 
 			i = next;
-		} while (i!=0);
-		
+		} while (i != 0);
+
 
 		return false;
 	};
@@ -716,98 +716,82 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 
 	if (tempTriangles.empty())					// If all polygons were disjoined
 		return;
+
 	else if (tempTriangles.size() == 1)			// If only one polygon
 	{
 		std::vector<fPoint2D> points(3);
 		for (int16_t i = 0; i < 3; i++)
 		{
-			points[i].x = tempTriangles.front().p[i].x;
-			points[i].y = tempTriangles.front().p[i].y;
+			points[i].x = tempTriangles.front().points[i].x;
+			points[i].y = tempTriangles.front().points[i].y;
 		}
 
 		ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, _top_y, _bottom_y, _left_x, _right_x);
 	}
-	else if (tempTriangles.size() > 1 && (_right_x - _left_x) > 1.0f && (_bottom_y - _top_y) > 1.0f)
+												// If we have many polygons
+	else if (tempTriangles.size() > 1)
 	{
-		int16_t count_point = 0;
-
-		if (crossing_number(tempTriangles.front(), _left_x, _top_y)) count_point++;
-		if (crossing_number(tempTriangles.front(), _right_x, _top_y)) count_point++;
-		if (crossing_number(tempTriangles.front(), _left_x, _bottom_y)) count_point++;
-		if (crossing_number(tempTriangles.front(), _right_x, _bottom_y)) count_point++;
-
-		if (count_point == 4)							// Surrounding polygon
+		if ((_right_x - _left_x) > 1.0f)		// Check dx (if > 1 then we need to split or draw, if <= 1 then we have 1 pixel)
 		{
-			ClearConsole(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
-			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, & rectWindow);
-		}
-														// Split into windows
-		else
-		{
-			tempTriangles.clear();
+			int16_t count_point = 0;
 
-			float dx = (_right_x - _left_x) / 2;
-			float dy = (_bottom_y - _top_y) / 2;
+			if (crossing_number(tempTriangles.front(), _left_x, _top_y)) count_point++;
+			if (crossing_number(tempTriangles.front(), _right_x, _top_y)) count_point++;
+			if (crossing_number(tempTriangles.front(), _left_x, _bottom_y)) count_point++;
+			if (crossing_number(tempTriangles.front(), _right_x, _bottom_y)) count_point++;
 
-
-			// Top Left
-			WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y, _top_y + roundf(dy));
-				
-			// Top Right
-			WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y, _top_y + roundf(dy));
-				
-			// Bottom Left
-			WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y + roundf(dy), _bottom_y);
-				
-			// Bottom Right
-			WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y + roundf(dy), _bottom_y);
-		}
-	}
-	else
-	{
-		// Need to repear some dioganals when press WED
-
-		std::vector<triangle> visible_tris;
-
-		float min_z = tempTriangles.front().p[0].z;
-
-		for (auto& tri : tempTriangles)
-		{
-			for (int16_t i = 0; i < 3; i++)
+			if (count_point == 4)							// Surrounding polygon
 			{
-				if (min_z > tri.p[i].z)
-					min_z = tri.p[i].z;
+				ClearConsole(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
+				//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, & rectWindow);
 			}
-		}
-
-		visible_tris.push_back(std::move(tempTriangles.front()));
-		tempTriangles.erase(tempTriangles.begin());
-
-		for (auto& tri : tempTriangles)
-		{
-			for (int16_t i = 0; i < 3; i++)
+															// Split into windows
+			else
 			{
-				if (fabs(tri.p[i].z - min_z) < 0.00001f)
+				tempTriangles.clear();
+
+
+				if ((_bottom_y - _top_y) > 1.0f)			// if <= 1 then we cant split Y anymore
 				{
-					visible_tris.push_back(std::move(tri));
-					break;
+					float dx = (_right_x - _left_x) / 2;
+					float dy = (_bottom_y - _top_y) / 2;
+
+
+					// Top Left
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y, _top_y + roundf(dy));
+
+					// Top Right
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y, _top_y + roundf(dy));
+
+					// Bottom Left
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y + roundf(dy), _bottom_y);
+
+					// Bottom Right
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y + roundf(dy), _bottom_y);
+				}
+
+				else									// split only X coords
+				{
+					float dx = (_right_x - _left_x) / 2;
+
+					// Top Left
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y, _top_y);
+
+					// Top Right
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y, _top_y);
+
+					// Bottom Left
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x, _left_x + roundf(dx), _top_y, _bottom_y);
+
+					// Bottom Right
+					WarnockAlgorithm(vecTrianglesToRaster, _left_x + roundf(dx), _right_x, _top_y, _bottom_y);
 				}
 			}
 		}
 
-		for (auto& tri : visible_tris)
+		else					// else we have i pixel cube then draw it
 		{
-			std::vector<fPoint2D> points(3);
-			for (int16_t i = 0; i < 3; i++)
-			{
-				points[i].x = tri.p[i].x;
-				points[i].y = tri.p[i].y;
-			}
-
-			
-			ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, _top_y, _bottom_y, _left_x, _right_x);
-			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, & rectWindow);
-			//DrawPolygons(points, PIXEL_SOLID, FG_MAGENTA);
+			ClearConsole(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
 		}
 	}
 }
