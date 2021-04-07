@@ -264,6 +264,13 @@ protected:
 			w = obj.w;
 			return *this;
 		}
+		fPoint3D& operator=(float value)
+		{
+			x = value;
+			y = value;
+			z = value;
+			return *this;
+		}
 		fPoint3D& operator+=(const fPoint3D& obj)
 		{
 			x += obj.x;
@@ -314,6 +321,9 @@ protected:
 	{
 		fPoint3D points[3];
 
+		int16_t sym = PIXEL_SOLID;
+		int16_t col = FG_WHITE;
+
 		triangle() {};
 		triangle(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3)
 		{
@@ -336,7 +346,7 @@ public:
 	void DrawPolygons(std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE);
 
 		// Clear our console
-	void ClearConsole(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c = PIXEL_SOLID, int16_t col = FG_BLACK);
+	void Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c = PIXEL_SOLID, int16_t col = FG_BLACK);
 	void Clip(int16_t& x, int16_t& y);
 
 	void ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE,
@@ -356,6 +366,9 @@ public:
 
 	void WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, float _left_x,
 		float _right_x, float _top_y, float _bottom_y);
+	void RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point, fPoint3D& barycenter);
+
+	void DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
 
 	void MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m);
 

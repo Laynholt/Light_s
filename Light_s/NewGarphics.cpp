@@ -1,101 +1,73 @@
 #include "NewGarphics.h"
 
-//void NewGarphics::OnUserCreate()
-//{
-//	points.resize(4);
-//	//points = { {70, 50}, {75, 45}, {85, 45}, {80, 50} };
-//	points = { {70, 50}, {20, 15}, {130, 15}, {80, 50} };
-//
-//	angle = 0.0f;
-//
-//	mXtoRight.m[0][0]	= 1.0f; mXtoRight.m[1][1]	= 1.0f; mXtoRight.m[2][2]	= 1.0f;
-//	mXtoLeft.m[0][0]	= 1.0f; mXtoLeft.m[1][1]	= 1.0f; mXtoLeft.m[2][2]	= 1.0f;
-//	mYtoUp.m[0][0]		= 1.0f; mYtoUp.m[1][1]		= 1.0f; mYtoUp.m[2][2]		= 1.0f;
-//	mYtoDown.m[0][0]	= 1.0f; mYtoDown.m[1][1]	= 1.0f; mYtoDown.m[2][2]	= 1.0f;
-//}
-//
-//void NewGarphics::OnUserUpdate(float fElapsedTime)
-//{
-//	// Clear our console
-//	ClearConsole(0, 0, GetConsoleWidth(), GetConsoleHeight());
-//
-//	if (GetKey('W').bHeld) { ScalingPolygons(points, 1.01f); }
-//	if (GetKey('S').bHeld) { ScalingPolygons(points, 0.99f); }
-//	if (GetKey('A').bHeld) { angle = -0.9f; RotatePolygons(points, angle); }
-//	if (GetKey('D').bHeld) { angle = 0.9f; RotatePolygons(points, angle); }
-//	if (GetKey('E').bHeld)
-//	{
-//		mXtoRight.m[1][0] = 100.0f * fElapsedTime;
-//		MoveTo2D(points, mXtoRight);
-//	}
-//	if (GetKey('Q').bHeld)
-//	{
-//		mXtoLeft.m[1][0] = -100.0f * fElapsedTime;
-//		MoveTo2D(points, mXtoLeft);
-//	}
-//	if (GetKey('R').bHeld)
-//	{
-//		mYtoUp.m[0][1] = -100.0f * fElapsedTime;
-//		MoveTo2D(points, mYtoUp);
-//	}
-//	if (GetKey('F').bHeld)
-//	{
-//		mYtoDown.m[0][1] = 100.0f * fElapsedTime;
-//		MoveTo2D(points, mYtoDown);
-//	}
-//	
-//
-//	//DrawLineBresenham(points[0].x, points[0].y, points[1].x, points[1].y, ' ', BG_WHITE);
-//	DrawPolygons(points, ' ', BG_WHITE);
-//	//ShadingPolygonsScanLine(points);
-//	ShadingPolygonsFloodFill(points);
-//}
-
-
 void NewGarphics::OnUserCreate()
 {
-	cube.tris =
+	//cube.tris =
+	//{
+	//		// SOUTH
+	//		{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
+	//		{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+
+	//		// EAST                                                      
+	//		{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
+	//		{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+
+	//		// NORTH                                                     
+	//		{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
+	//		{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+
+	//		// WEST                                                      
+	//		{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
+	//		{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+
+	//		// TOP                                                       
+	//		{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
+	//		{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
+
+	//		// BOTTOM                                                    
+	//		{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
+	//		{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+	//};
+
+	prisma.tris =
 	{
-			// SOUTH
-			{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+		// SOUTH
+		{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 
-			// EAST                                                      
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+		// EAST                                                      
+		{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 1.0f },
 
-			// NORTH                                                     
-			{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+		// WEST                                                      
+		{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 1.0f,    1.0f, 2.0f, 1.0f },
 
-			// WEST                                                      
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+		// TOP                                                       
+		{ 0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 2.0f, 0.0f },
 
-			// TOP                                                       
-			{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-			{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
-
-			// BOTTOM                                                    
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+		// BOTTOM                                                    
+		{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 	};
 
-	matProj = Matrix_MakeProjection(90.0f, (float)GetConsoleHeight() / (float)GetConsoleWidth(), 0.1f, 1000.0f);
 
+	matProj = Matrix_MakeProjection(90.0f, static_cast<float>(GetConsoleHeight()) / static_cast<float>(GetConsoleWidth()), 0.1f, 1000.0f);
 
-
-	fThetaX = fThetaY = fThetaZ = 0.0f;
+	lightINF.x = 1.0f;
+	lightINF.y = -100.0f;
+	lightINF.z = 1.0f;
+	
 	scale = 1.0f;							
 	_x = 0.65f, _y = 0.5f; 
+	fThetaX = fThetaY = fThetaZ = 0.0f;
 }
 
 void NewGarphics::OnUserUpdate(float fElapsedTime)
 {
 	// Clear our console
-	ClearConsole(0, 0, GetConsoleWidth(), GetConsoleHeight());
+	Fill(0, 0, GetConsoleWidth(), GetConsoleHeight());
 
-	// Повороты вокруг осей
+	// Move around axies
 	if (GetKey(L'W').bHeld)
 		fThetaX += 8.0f * fElapsedTime;
 	if (GetKey(L'S').bHeld)
@@ -109,20 +81,20 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 	if (GetKey(L'E').bHeld)
 		fThetaY -= 8.0f * fElapsedTime;
 
-	// Масштабирование
-	if (GetKey(L'Z').bHeld)		// Увеличение
+	// Scaling
+	if (GetKey(L'Z').bHeld)		// Increace
 		scale = (scale <= 1.5f) ? scale + 0.01f : scale;
-	if (GetKey(L'X').bHeld)		// Уменьшение
+	if (GetKey(L'X').bHeld)		// Decreace
 		scale = (scale >= 0.5f) ? scale - 0.01f : scale;
 
-	// Сдвиги
-	if (GetKey(L'R').bHeld)		// Сдвиг вправо
+	// Shifts
+	if (GetKey(L'R').bHeld)		// Move to right
 		_x += 0.01f;
-	if (GetKey(L'F').bHeld)		// Сдвиг влево
+	if (GetKey(L'F').bHeld)		// Move to left
 		_x -= 0.01f;
-	if (GetKey(L'T').bHeld)		// Сдвиг вверх
+	if (GetKey(L'T').bHeld)		// Move to up
 		_y -= 0.01f;
-	if (GetKey(L'G').bHeld)		// Сдвиг вниз
+	if (GetKey(L'G').bHeld)		// Move to down
 		_y += 0.01f;
 
 
@@ -145,36 +117,46 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 	std::vector<triangle> vecTrianglesToRaster;
 
 	float  t = 0.0f;
+	int16_t tri_color = FG_DARK_BLUE;
+	int16_t count_tris = 0;
 	//for (int16_t i = 0; i < 2; i++, t += 1.4f) 
 	{
-		// Проходимся по всем треугольникам
-		for (auto tri : cube.tris)
+		// Take all triangles
+		for (auto tri : prisma.tris)
 		{
 			triangle triProjected, triTransformed;
-			
 
 			triTransformed.points[0] = MultiplyMatrixVector(WorldMatrix, tri.points[0]);
 			triTransformed.points[1] = MultiplyMatrixVector(WorldMatrix, tri.points[1]);
-			triTransformed.points[2] = MultiplyMatrixVector(WorldMatrix, tri.points[2]);
+			triTransformed.points[2] = MultiplyMatrixVector(WorldMatrix, tri.points[2]);		
 
-
-			// Переводим треугольники из 3D --> 2D
+			// Translate from 3D --> 2D
 			triProjected.points[0] = MultiplyMatrixVector(matProj, triTransformed.points[0]);
 			triProjected.points[1] = MultiplyMatrixVector(matProj, triTransformed.points[1]);
 			triProjected.points[2] = MultiplyMatrixVector(matProj, triTransformed.points[2]);
 
-			// Масштабируем под размер консоли
+			// Scaling to the size of the console
 			for (int16_t i = 0; i < 3; i++)
 			{
 				triProjected.points[i].x += _x + t;
 				triProjected.points[i].y += _y;
 
-				triProjected.points[i].x *= 0.3f * (float)GetConsoleWidth();
-				triProjected.points[i].y *= 0.3f * (float)GetConsoleHeight();
+				triProjected.points[i].x *= 0.2f * static_cast<float>(GetConsoleWidth());
+				triProjected.points[i].y *= 0.2f * static_cast<float>(GetConsoleHeight());
+
+				// Counting barycenter
+				barycenter += triProjected.points[i];
 			}
+			count_tris++;
+
+			// Change color
+			tri_color = (tri_color == FG_DARK_BLUE) ? FG_GREEN : FG_DARK_BLUE;
+			triProjected.col = tri_color;
 
 			vecTrianglesToRaster.push_back(triProjected);
 		}
+
+		barycenter /= count_tris * 3;
 
 		// Sort triangles from back to front
 		std::sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle& t1, triangle& t2)
@@ -184,6 +166,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 				return z1 < z2;
 			});
 
+		// Round all coord of points
 		for (auto& tri : vecTrianglesToRaster)
 		{
 			for (int16_t i = 0; i < 3; i++)
@@ -193,28 +176,29 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			}
 		}
 
-
+		// Draw
+		Fill(0, iConsoleHeight / 2, iConsoleWidth, iConsoleHeight, PIXEL_SOLID, FG_WHITE);
+		DrawShadow(vecTrianglesToRaster, lightINF);
 		WarnockAlgorithm(vecTrianglesToRaster, 0.0f, iConsoleWidth - 1, 0.0f, iConsoleHeight - 1);
+
+		//fPoint3D view_point = { static_cast<float>(iConsoleWidth) / 4.0f, static_cast<float>(iConsoleHeight) / 3.0f, -1.0f };
+		//RobertsAlgorithm(vecTrianglesToRaster, view_point, barycenter);
 
 		//for (auto& tri : vecTrianglesToRaster)
 		//{
 		//	for (int16_t i = 0; i < 3; i++)
 		//	{
-		//		lines[i].x = tri.p[i].x;
-		//		lines[i].y = tri.p[i].y;
+		//		lines[i].x = tri.points[i].x;
+		//		lines[i].y = tri.points[i].y;
 		//	}
 
 		//	// Выводим на экран
 
-		//	ShadingPolygonsScanLine(lines);
-		//	//DrawPolygons(lines, PIXEL_SOLID, FG_GREY);
+		//	//ShadingPolygonsScanLine(lines, PIXEL_SOLID, FG_DARK_BLUE);
+		//	DrawPolygons(lines, PIXEL_SOLID, FG_GREY);
 		//}
-
 		
-
+		barycenter = 0.0f;
 		vecTrianglesToRaster.clear();
 	}
-
-	
-
 }

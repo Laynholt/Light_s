@@ -289,7 +289,7 @@ void Graphics::DrawPolygons(std::vector<fPoint2D>& points, int16_t c, int16_t co
 	DrawLineBresenham(roundf(points[i].x), roundf(points[i].y), roundf(points[0].x), roundf(points[0].y), c, col);
 }
 
-void Graphics::ClearConsole(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
+void Graphics::Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
 {
 	Clip(x1, y1);
 	Clip(x2, y2);
@@ -595,6 +595,7 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	};
 
 
+
 	// Find intersections between two segments
 		// https://www.youtube.com/watch?v=bbTqI0oqL5U&t=596s&ab_channel=TECHDOSE
 	auto onSegment = [&](fPoint3D p, fPoint3D q, fPoint3D r)
@@ -657,15 +658,11 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	// lambda for checking edges of screen
 	auto on_screen = [&](triangle tr)
 	{
-		int16_t count_point = 0;
 
-		if (crossing_number(tr, _left_x, _top_y)) count_point++;
-		if (crossing_number(tr, _right_x, _top_y)) count_point++;
-		if (crossing_number(tr, _left_x, _bottom_y)) count_point++;
-		if (crossing_number(tr, _right_x, _bottom_y)) count_point++;
-
-		if (count_point == 4)							// Surrounding polygon
-			return true;
+		if (crossing_number(tr, _left_x, _top_y)) return true;
+		if (crossing_number(tr, _right_x, _top_y)) return true;
+		if (crossing_number(tr, _left_x, _bottom_y)) return true;
+		if (crossing_number(tr, _right_x, _bottom_y)) return true;
 
 		for (int16_t i = 0; i < 3; i++)					// One point on screen or more
 		{
@@ -742,8 +739,8 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 
 			if (count_point == 4)							// Surrounding polygon
 			{
-				ClearConsole(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
-				//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, & rectWindow);
+				//Fill(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
+				Fill(_left_x, _top_y, _right_x, _bottom_y, tempTriangles.front().sym, tempTriangles.front().col);
 			}
 															// Split into windows
 			else
@@ -791,8 +788,71 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 
 		else					// else we have i pixel cube then draw it
 		{
-			ClearConsole(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
+			Fill(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
 		}
+	}
+}
+
+void Graphics::RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point, fPoint3D& barycenter)
+{
+	fPoint3D vec1, vec2;
+
+	for (auto& tri : vecTrianglesToRaster)
+	{
+		vec1 = tri.points[0] - tri.points[1];
+		vec2 = tri.points[2] - tri.points[1];
+
+		float d;
+		fPoint3D v;
+		v = Vector_CrossProduct(vec1, vec2);
+		d = -Vector_DotProduct(v, vec1);
+
+		float m = 0.0f;
+		if ((Vector_DotProduct(v, barycenter) + d) < 0.0f) m = 1.0f;
+		else if ((Vector_DotProduct(v, barycenter) + d) > 0.0f) m = -1.0f;
+
+		v *= m;
+		d *= m;
+
+		if ((Vector_DotProduct(v, view_point) + d) > 0.0f)
+		{
+			std::vector<fPoint2D> points(3);
+			for (int16_t i = 0; i < 3; i++)
+			{
+				points[i].x = tri.points[i].x;
+				points[i].y = tri.points[i].y;
+			}
+			DrawPolygons(points);
+		}
+	}
+}
+
+void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
+{
+	std::vector<triangle> vecShadow = vecTrianglesToRaster;
+
+	for (auto& tri : vecShadow)
+	{
+		for (int16_t i = 0; i < 3; i++)
+		{
+			tri.points[i].x -= light.x * (tri.points[i].y / light.y);
+			tri.points[i].z -= light.z * (tri.points[i].y / light.y);
+			tri.points[i].y = 0.85f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 10.0f;
+		}
+	}
+
+	std::vector<fPoint2D> lines(3);
+
+	for (auto& tri : vecShadow)
+	{
+		for (int16_t i = 0; i < 3; i++)
+		{
+			lines[i].x = tri.points[i].x;
+			lines[i].y = tri.points[i].y;
+		}
+
+		// Draw shadow
+		ShadingPolygonsScanLine(lines, PIXEL_SOLID, FG_GREY);
 	}
 }
 
