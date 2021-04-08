@@ -453,6 +453,49 @@ void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int
 	}
 }
 
+void Graphics::ShadingPolygonsFloodFillRecursion(const std::vector<fPoint2D>& points, int16_t sym, int16_t col, int16_t col_edges)
+{
+	fPoint2D center;
+
+	for (auto& point : points)
+	{
+		center += point;
+	}
+	center /= points.size();
+
+	center.x = roundf(center.x);
+	center.y = roundf(center.y);
+
+
+	CHAR_INFO* console_ptr = nullptr;
+
+	FillingFloodFill(console_ptr, center.x, center.y, sym, col, col_edges);
+}
+
+void Graphics::FillingFloodFill(CHAR_INFO* console_ptr, int16_t x, int16_t y, int16_t sym, int16_t col, int16_t col_edges)
+{
+	// lambda for checking edges of screen
+	auto on_screen = [this](int16_t x, int16_t y)
+	{
+		if (x >= 0.0f && x <= GetConsoleWidth() && y >= 0.0f && y <= GetConsoleHeight())
+			return true;
+		return false;
+	};
+
+	Draw(x, y, sym, col);
+
+	console_ptr = &console[(int16_t)y * iConsoleWidth + (int16_t)x];
+
+	if (on_screen(x, y - 1) && (console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col)
+		FillingFloodFill(console_ptr, x, y - 1, sym, col, col_edges);
+	if (on_screen(x, y + 1) && (console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col)
+		FillingFloodFill(console_ptr, x, y + 1, sym, col, col_edges);
+	if (on_screen(x - 1, y) && (console_ptr - 1)->Attributes != col_edges && (console_ptr - 1)->Attributes != col)
+		FillingFloodFill(console_ptr, x - 1, y, sym, col, col_edges);
+	if (on_screen(x + 1, y) && (console_ptr + 1)->Attributes != col_edges && (console_ptr + 1)->Attributes != col)
+		FillingFloodFill(console_ptr, x + 1, y, sym, col, col_edges);
+}
+
 void Graphics::RotateLineAroundPoint(float x1, float y1, float& x2, float& y2, float& angle)
 {
 	float eps = PI / 180;													// Convert to radian
@@ -793,9 +836,11 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	}
 }
 
-void Graphics::RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point, fPoint3D& barycenter)
+std::vector<Graphics::triangle> Graphics::RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point,
+	fPoint3D& barycenter, int16_t c, int16_t col)
 {
 	fPoint3D vec1, vec2;
+	std::vector<triangle> vecVisibleSurfaces;
 
 	for (auto& tri : vecTrianglesToRaster)
 	{
@@ -805,14 +850,13 @@ void Graphics::RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 		float d;
 		fPoint3D v;
 		v = Vector_CrossProduct(vec1, vec2);
-		d = -Vector_DotProduct(v, vec1);
+		d = -Vector_DotProduct(v, tri.points[0]);
 
-		float m = 0.0f;
-		if ((Vector_DotProduct(v, barycenter) + d) < 0.0f) m = 1.0f;
-		else if ((Vector_DotProduct(v, barycenter) + d) > 0.0f) m = -1.0f;
-
-		v *= m;
-		d *= m;
+		if ((Vector_DotProduct(v, barycenter) + d) < 0.0f)
+		{
+			v *= -1.0f;;
+			d *= -1.0f; 
+		}
 
 		if ((Vector_DotProduct(v, view_point) + d) > 0.0f)
 		{
@@ -822,9 +866,17 @@ void Graphics::RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPo
 				points[i].x = tri.points[i].x;
 				points[i].y = tri.points[i].y;
 			}
-			DrawPolygons(points);
+			
+			
+			ShadingPolygonsScanLine(points, c, col);
+			DrawPolygons(points, PIXEL_SOLID, FG_WHITE);
+			//ShadingPolygonsFloodFillRecursion(points, c, col, FG_WHITE);
+
+			vecVisibleSurfaces.push_back(tri);
 		}
 	}
+
+	return vecVisibleSurfaces;
 }
 
 void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
@@ -836,8 +888,8 @@ void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D&
 		for (int16_t i = 0; i < 3; i++)
 		{
 			tri.points[i].x -= light.x * (tri.points[i].y / light.y);
-			tri.points[i].z -= light.z * (tri.points[i].y / light.y);
-			tri.points[i].y = 0.85f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 10.0f;
+			tri.points[i].z += light.z * (tri.points[i].y / light.y);
+			tri.points[i].y = 0.85f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 10.0f;
 		}
 	}
 
@@ -863,6 +915,44 @@ void Graphics::MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m)
 		point.x += m.m[1][0];
 		point.y += m.m[0][1];
 	}
+}
+
+void Graphics::GetBarycenter3D(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& barycenter)
+{
+	std::vector<fPoint3D> points;
+	bool equal = false;
+
+	for (auto& tri : vecTrianglesToRaster)						// find all point (once)
+	{
+		for (size_t i = 0; i < 3; i++)
+		{
+			if (points.empty())
+				points.push_back(tri.points[i]);
+			else
+			{
+				for (size_t j = 0; j < points.size(); j++)
+				{
+					if (points[j] == tri.points[i])			// if not equal
+					{
+						equal = true;
+						break;
+					}
+				}
+
+				if (!equal)
+				{
+					points.push_back(tri.points[i]);	
+				}
+				equal = false;
+			}
+		}
+	}
+
+	for (auto& p : points)
+	{
+		barycenter += p;
+	}
+	barycenter /= points.size();
 }
 
 float Graphics::Vector_DotProduct(fPoint3D& v1, fPoint3D& v2)

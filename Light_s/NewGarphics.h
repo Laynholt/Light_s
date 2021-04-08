@@ -8,7 +8,7 @@ class NewGarphics : public Graphics
 	// Variables
 private:
 
-	mesh prisma;
+	std::vector<mesh> shapes;//prisma;
 
 	float scale;						// For scaling
 	float _x, _y;						// For Moving

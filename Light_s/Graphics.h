@@ -300,6 +300,15 @@ protected:
 			return *this;
 		}
 
+		bool operator==(fPoint3D& obj)
+		{
+			if (fabsf(x - obj.x) < 0.001f)
+				if (fabsf(y - obj.y) < 0.001f)
+					if (fabsf(z - obj.z) < 0.001f)
+						return true;
+			return false;
+		}
+
 		fPoint3D operator+(const fPoint3D& obj)
 		{
 			return fPoint3D(x + obj.x, y + obj.y, z + obj.z);
@@ -341,19 +350,23 @@ protected:
 
 	// Drawing methods
 public:
-	void Draw(int16_t x, int16_t y, int16_t c = ' ', int16_t col = BG_WHITE);
-	void DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c = ' ', int16_t col = BG_WHITE);
-	void DrawPolygons(std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE);
+	void Draw(int16_t x, int16_t y, int16_t sym = ' ', int16_t col = BG_WHITE);
+	void DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t sym = ' ', int16_t col = BG_WHITE);
+	void DrawPolygons(std::vector<fPoint2D>& points, int16_t sym = ' ', int16_t col = BG_WHITE);
 
 		// Clear our console
-	void Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c = PIXEL_SOLID, int16_t col = FG_BLACK);
+	void Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t sym = PIXEL_SOLID, int16_t col = FG_BLACK);
 	void Clip(int16_t& x, int16_t& y);
 
-	void ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c = ' ', int16_t col = BG_WHITE,
+	void ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t sym = ' ', int16_t col = BG_WHITE,
 		int16_t y_min = -1, int16_t y_max = -1, int16_t x_min = -1, int16_t x_max = -1);
-	void ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t c = ' ', 
+	void ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t sym = ' ', 
+		int16_t col = BG_WHITE, int16_t col_edges = BG_WHITE);
+	void ShadingPolygonsFloodFillRecursion(const std::vector<fPoint2D>& points, int16_t sym = ' ',
 		int16_t col = BG_WHITE, int16_t col_edges = BG_WHITE);
 
+private:
+	void FillingFloodFill(CHAR_INFO* console_ptr, int16_t x, int16_t y, int16_t sym, int16_t col, int16_t col_edges);
 
 	// Actions methods
 public:
@@ -366,11 +379,14 @@ public:
 
 	void WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, float _left_x,
 		float _right_x, float _top_y, float _bottom_y);
-	void RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point, fPoint3D& barycenter);
+	std::vector<triangle> RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point, fPoint3D& barycenter,
+		int16_t c = PIXEL_SOLID, int16_t col = FG_BLUE);
 
 	void DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
 
 	void MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m);
+
+	void GetBarycenter3D(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& barycenter);
 
 	// Matrix methods (Use this for 3D)
 public:
