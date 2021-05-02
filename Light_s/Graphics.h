@@ -206,12 +206,12 @@ protected:
 	struct iEdgeScanLine
 	{
 		int16_t x1, x2, y1, y2;
-		float del_x, del_y, del_xy;
+		float del_x, del_y, del_xy, del_yx;
 
 		iEdgeScanLine()
 		{
 			x1 = x2 = y1 = y2 = 0;
-			del_x = del_y = del_xy = 0.0f;
+			del_x = del_y = del_xy = del_yx = 0.0f;
 		}
 
 		iEdgeScanLine& operator=(const iEdgeScanLine& obj)
@@ -223,6 +223,7 @@ protected:
 			del_x = obj.del_x;
 			del_y = obj.del_y;
 			del_xy = obj.del_xy;
+			del_yx = obj.del_yx;
 			return *this;
 		}
 	};
@@ -340,6 +341,12 @@ protected:
 			points[1].x = x2; points[1].y = y2; points[1].z = z2;
 			points[2].x = x3; points[2].y = y3; points[2].z = z3;
 		}
+		triangle(const fPoint2D& p1, const fPoint2D& p2, const fPoint2D& p3)
+		{
+			points[0] = p1;
+			points[1] = p2;
+			points[2] = p3;
+		}
 	};
 
 	struct mesh
@@ -360,8 +367,6 @@ public:
 
 	void ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t sym = ' ', int16_t col = BG_WHITE,
 		int16_t y_min = -1, int16_t y_max = -1, int16_t x_min = -1, int16_t x_max = -1);
-	void ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t sym = ' ', 
-		int16_t col = BG_WHITE, int16_t col_edges = BG_WHITE);
 	void ShadingPolygonsFloodFillRecursion(const std::vector<fPoint2D>& points, int16_t sym = ' ',
 		int16_t col = BG_WHITE, int16_t col_edges = BG_WHITE);
 
@@ -377,12 +382,24 @@ public:
 	bool ScalingLine(fPoint2D& point1, fPoint2D& point2, float k);
 	bool ScalingPolygons(std::vector<fPoint2D>& points, float k);
 
+private:
+	bool crossingNumber(triangle tr, float _x, float _y);
+
+	bool onSegment(const fPoint3D& p, const fPoint3D& q, const fPoint3D& r);
+	int16_t orientation(const fPoint3D& p, const fPoint3D& q, const fPoint3D& r);
+	bool doIntersect(const fPoint3D& p1, const fPoint3D& q1, const fPoint3D& p2, const fPoint3D& q2);
+
+	bool checkPointAndSegment(const fPoint3D& start, const fPoint3D& p, const fPoint3D& end);
+
+public:
 	void WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, float _left_x,
 		float _right_x, float _top_y, float _bottom_y);
 	std::vector<triangle> RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point, fPoint3D& barycenter,
-		int16_t c = PIXEL_SOLID, int16_t col = FG_BLUE);
+		int16_t sym = PIXEL_SOLID, int16_t col = FG_BLUE, int16_t col_edge = FG_GREY);
+	void PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int16_t sym = PIXEL_SOLID, int16_t col = FG_DARK_YELLOW,
+		int16_t col_edge = FG_GREY);
 
-	void DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
+	void DrawShadowInf(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
 
 	void MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m);
 

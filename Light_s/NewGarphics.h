@@ -19,8 +19,6 @@ private:
 	fPoint3D lightINF;
 	fPoint3D barycenter;
 
-
-
 	// Overrided methods
 private:
 	virtual void OnUserCreate() override;

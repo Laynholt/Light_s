@@ -199,16 +199,16 @@ Graphics::sKeyState& Graphics::GetKey(int16_t key_id)
 //-------------Graphic-2D-----------------//
 //########################################//
 
-void Graphics::Draw(int16_t x, int16_t y, int16_t c, int16_t col)
+void Graphics::Draw(int16_t x, int16_t y, int16_t sym, int16_t col)
 {
 	if (x >= 0 && x < iConsoleWidth && y >= 0 && y < iConsoleHeight)
 	{
-		console[y * iConsoleWidth + x].Char.UnicodeChar = c;
+		console[y * iConsoleWidth + x].Char.UnicodeChar = sym;
 		console[y * iConsoleWidth + x].Attributes = col;
 	}
 }
 
-void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
+void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t sym, int16_t col)
 {
 	/*	dx = (x2-x1)
 		dy = (y2-y1)
@@ -241,7 +241,7 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 
 		while (x != x2)
 		{
-			Draw(x, y, c, col);
+			Draw(x, y, sym, col);
 			if (balance >= 0)
 			{
 				y += signY;
@@ -252,7 +252,7 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 			x += signX;
 		}
 
-		Draw(x, y, c, col);
+		Draw(x, y, sym, col);
 	}
 
 	else								// Similarly for axis [Y>X]
@@ -263,7 +263,7 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 
 		while (y != y2)
 		{
-			Draw(x, y, ' ', BG_WHITE);
+			Draw(x, y, sym, col);
 			if (balance >= 0)
 			{
 				x += signX;
@@ -274,28 +274,28 @@ void Graphics::DrawLineBresenham(int16_t x1, int16_t y1, int16_t x2, int16_t y2,
 			y += signY;
 		}
 
-		Draw(x, y, ' ', BG_WHITE);
+		Draw(x, y, sym, col);
 	}
 }
 
-void Graphics::DrawPolygons(std::vector<fPoint2D>& points, int16_t c, int16_t col)
+void Graphics::DrawPolygons(std::vector<fPoint2D>& points, int16_t sym, int16_t col)
 {
 	size_t i;
 
 	for (i = 0; i < points.size() - 1; i++)
 	{
-		DrawLineBresenham(roundf(points[i].x), roundf(points[i].y), roundf(points[i + 1].x), roundf(points[i + 1].y), c, col);
+		DrawLineBresenham(roundf(points[i].x), roundf(points[i].y), roundf(points[i + 1].x), roundf(points[i + 1].y), sym, col);
 	}
-	DrawLineBresenham(roundf(points[i].x), roundf(points[i].y), roundf(points[0].x), roundf(points[0].y), c, col);
+	DrawLineBresenham(roundf(points[i].x), roundf(points[i].y), roundf(points[0].x), roundf(points[0].y), sym, col);
 }
 
-void Graphics::Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t c, int16_t col)
+void Graphics::Fill(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t sym, int16_t col)
 {
 	Clip(x1, y1);
 	Clip(x2, y2);
 	for (int16_t x = x1; x <= x2; x++)
 		for (int16_t y = y1; y <= y2; y++)
-			Draw(x, y, c, col);
+			Draw(x, y, sym, col);
 }
 
 void Graphics::Clip(int16_t& x, int16_t& y)
@@ -307,7 +307,7 @@ void Graphics::Clip(int16_t& x, int16_t& y)
 	else if (y >= iConsoleHeight) y = iConsoleHeight;
 }
 
-void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t c, int16_t col, int16_t y_min, int16_t y_max,
+void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int16_t sym, int16_t col, int16_t y_min, int16_t y_max,
 	int16_t x_min, int16_t x_max)
 {
 	std::vector<iEdgeScanLine> edges(points.size());
@@ -371,84 +371,11 @@ void Graphics::ShadingPolygonsScanLine(const std::vector<fPoint2D>& points, int1
 				x1 = (scanex[i] < x_min) ? x_min : scanex[i];
 				x2 = (scanex[i + 1] > x_max) ? x_max : scanex[i + 1];
 
-				DrawLineBresenham(x1, y, x2, y, c, col);
+				DrawLineBresenham(x1, y, x2, y, sym, col);
 				//DrawLineBresenham(scanex[i], y, scanex[i + 1], y, c, col);
 			}
 
 			scanex.clear();
-		}
-	}
-}
-
-void Graphics::ShadingPolygonsFloodFill(const std::vector<fPoint2D>& points, int16_t c, int16_t col, int16_t col_edges)
-{
-	// Its Beta version!
-	// It has some problems with filling some corners
-
-	fPoint2D center, temp;
-	std::queue<fPoint2D> queue;
-
-	for (auto& point : points)
-	{
-		center += point;
-	}
-	center /= points.size();
-	
-	center.x = roundf(center.x);
-	center.y = roundf(center.y);
-
-	queue.push(std::move(center));
-
-	CHAR_INFO* console_ptr = nullptr;
-
-
-	Draw(center.x, center.y, c, col);
-
-	// lambda for checking edges of screen
-	auto on_screen = [this](int16_t x, int16_t y)
-	{
-		if (x >= 0.0f && x <= GetConsoleWidth() && y >= 0.0f && y <= GetConsoleHeight())
-			return true;
-		return false;
-	};
-
-	while (!queue.empty())
-	{
-		temp = std::move(queue.front());
-		queue.pop();
-		
-		console_ptr = &console[(int16_t)temp.y * iConsoleWidth + (int16_t)temp.x];
-
-		// Top
-		if ((console_ptr - iConsoleWidth)->Attributes != col_edges && (console_ptr - iConsoleWidth)->Attributes != col 
-			&& on_screen(temp.x, temp.y - 1.0f))
-		{
-			queue.push(std::move(fPoint2D(temp.x, temp.y - 1.0f)));
-			Draw(temp.x, temp.y - 1.0f, c, col);
-		}
-
-		// Bottom
-		if ((console_ptr + iConsoleWidth)->Attributes != col_edges && (console_ptr + iConsoleWidth)->Attributes != col
-			&& on_screen(temp.x, temp.y + 1.0f))
-		{
-			queue.push(std::move(fPoint2D(temp.x, temp.y + 1.0f)));
-			Draw(temp.x, temp.y + 1.0f, c, col);
-		}
-
-		// Left
-		if ((console_ptr - 1)->Attributes != col_edges && (console_ptr - 1)->Attributes != col
-			&& on_screen(temp.x - 1.0f, temp.y))
-		{
-			queue.push(std::move(fPoint2D(temp.x - 1.0f, temp.y)));
-			Draw(temp.x - 1.0f, temp.y, c, col);
-		}
-
-		// Right
-		if ((console_ptr + 1)->Attributes != col_edges && (console_ptr + 1)->Attributes != col
-			&& on_screen(temp.x + 1.0f, temp.y))
-		{
-			queue.push(std::move(fPoint2D(temp.x + 1.0f, temp.y)));
-			Draw(temp.x + 1.0f, temp.y, c, col);
 		}
 	}
 }
@@ -466,10 +393,33 @@ void Graphics::ShadingPolygonsFloodFillRecursion(const std::vector<fPoint2D>& po
 	center.x = roundf(center.x);
 	center.y = roundf(center.y);
 
+	if (center.x <= 0.0f || center.x >= iConsoleWidth || center.y <= 0.0f || center.y >= iConsoleHeight)
+	{
+		fPoint2D new_center;
+		int16_t counter = 0;
+		for (auto& point : points)
+		{
+			if (point.x >= 0.0f && point.x <= iConsoleWidth && point.y >= 0.0f && point.y <= iConsoleHeight)
+			{
+				new_center += point;
+				counter++;
+			}
+		}
 
-	CHAR_INFO* console_ptr = nullptr;
+		new_center += center;
+		counter++;
+		new_center /= counter;
 
-	FillingFloodFill(console_ptr, center.x, center.y, sym, col, col_edges);
+		center = new_center;
+	}
+
+	if (center.x >= 0.0f && center.x <= iConsoleWidth && center.y >= 0.0f && center.y <= iConsoleHeight)
+	{
+		CHAR_INFO* console_ptr = &console[(int16_t)center.y * iConsoleWidth + (int16_t)center.x];;
+
+		if (console_ptr->Attributes != col_edges && console_ptr->Attributes != col)
+			FillingFloodFill(console_ptr, center.x, center.y, sym, col, col_edges);
+	}
 }
 
 void Graphics::FillingFloodFill(CHAR_INFO* console_ptr, int16_t x, int16_t y, int16_t sym, int16_t col, int16_t col_edges)
@@ -477,7 +427,7 @@ void Graphics::FillingFloodFill(CHAR_INFO* console_ptr, int16_t x, int16_t y, in
 	// lambda for checking edges of screen
 	auto on_screen = [this](int16_t x, int16_t y)
 	{
-		if (x >= 0.0f && x <= GetConsoleWidth() && y >= 0.0f && y <= GetConsoleHeight())
+		if (x >= 0.0f && x <= iConsoleWidth && y >= 0.0f && y <= iConsoleHeight)
 			return true;
 		return false;
 	};
@@ -604,6 +554,116 @@ bool Graphics::ScalingPolygons(std::vector<fPoint2D>& points, float k)
 	return true;
 }
 
+bool Graphics::crossingNumber(triangle tr, float _x, float _y)
+{
+	// This function determines number of intersections with polygon
+
+	int16_t cn = 0;    // the  crossing number counter
+	int16_t i = 0;
+
+	do
+	{
+		int16_t next = (i + 1) % 3;
+
+		if (((tr.points[i].y <= _y) && (tr.points[next].y > _y)) ||
+			((tr.points[i].y > _y) && (tr.points[next].y <= _y)))
+		{
+			float vt = (_y - tr.points[i].y) / (tr.points[next].y - tr.points[i].y);
+			if (_x < tr.points[i].x + vt * (tr.points[next].x - tr.points[i].x))
+				++cn;
+		}
+
+		i = next;
+
+	} while (i != 0);
+
+	return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
+}
+
+bool Graphics::onSegment(const fPoint3D& p, const fPoint3D& q, const fPoint3D& r)
+{
+	// Find intersections between two segments
+		// https://www.youtube.com/watch?v=bbTqI0oqL5U&t=596s&ab_channel=TECHDOSE
+
+	if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
+		q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
+		return true;
+
+	return false;
+}
+
+int16_t Graphics::orientation(const fPoint3D& p, const fPoint3D& q, const fPoint3D& r)
+{
+	// To find orientation of ordered triplet (p, q, r). 
+	// The function returns following values 
+	// 0 --> p, q and r are colinear 
+	// 1 --> Clockwise 
+	// 2 --> Counterclockwise 
+
+	// See https://www.geeksforgeeks.org/orientation-3-ordered-points/ 
+		// for details of below formula. 
+	int16_t val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+	if (val == 0) return 0;			// colinear 
+
+	return (val > 0) ? 1 : 2;		// clock or counterclock wise 
+}
+
+bool Graphics::doIntersect(const fPoint3D& p1, const fPoint3D& q1, const fPoint3D& p2, const fPoint3D& q2)
+{
+	// The main function that returns true if line segment 'p1q1' 
+	// and 'p2q2' intersect. 
+
+	// Find the four orientations needed for general and 
+		// special cases 
+	int16_t o1 = orientation(p1, q1, p2);
+	int16_t o2 = orientation(p1, q1, q2);
+	int16_t o3 = orientation(p2, q2, p1);
+	int16_t o4 = orientation(p2, q2, q1);
+
+	// General case 
+	if (o1 != o2 && o3 != o4)
+		return true;
+
+	// Special Cases 
+	// p1, q1 and p2 are colinear and p2 lies on segment p1q1 
+	if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+
+	// p1, q1 and q2 are colinear and q2 lies on segment p1q1 
+	if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+
+	// p2, q2 and p1 are colinear and p1 lies on segment p2q2 
+	if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+
+	// p2, q2 and q1 are colinear and q1 lies on segment p2q2 
+	if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+	return false; // Doesn't fall in any of the above cases 
+}
+
+bool Graphics::checkPointAndSegment(const fPoint3D& start, const fPoint3D& p, const fPoint3D& end)
+{
+	float del_x = end.x - start.x;
+	float del_y = end.y - start.y;
+	float del_xy = (abs(del_y) <= 0.00001f) ? 0.0f : del_x / del_y;
+	float del_yx = (abs(del_x) <= 0.00001f) ? 0.0f : del_y / del_x;
+
+	if (onSegment(start, p, end))
+	{
+		if (abs(del_x) <= 0.00001f)
+			return true;
+
+		if (abs(del_y) <= 0.00001f)
+			return true;
+
+		if (start.x + del_xy * (p.y - start.y) - 1.0f <= p.x && start.x + del_xy * (p.y - start.y) + 1.0f >= p.x)
+			if (start.y + del_yx * (p.x - start.x) - 1.0f <= p.y && start.y + del_yx * (p.x - start.x) + 1.0f >= p.y)
+				return true;
+	}
+
+	return false;
+}
+
 void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, float _left_x,
 	float _right_x, float _top_y, float _bottom_y)
 {
@@ -612,100 +672,16 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	// For more info:
 		// https://geomalgorithms.com/a03-_inclusion.html
 		// https://stackoverflow.com/questions/27589796/check-point-within-polygon
-// This function determines number of intersections with polygon
-	auto crossing_number = [&](triangle tr, float _x, float _y)
-	{
-		int16_t cn = 0;    // the  crossing number counter
-		int16_t i = 0;
-
-		do
-		{
-			int16_t next = (i + 1) % 3;
-
-			if (((tr.points[i].y <= _y) && (tr.points[next].y > _y)) ||
-				((tr.points[i].y > _y) && (tr.points[next].y <= _y)))
-			{
-				float vt = (_y - tr.points[i].y) / (tr.points[next].y - tr.points[i].y);
-				if (_x < tr.points[i].x + vt * (tr.points[next].x - tr.points[i].x))
-					++cn;
-			}
-
-			i = next;
-
-		} while (i != 0);
-
-		return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
-	};
-
-
-
-	// Find intersections between two segments
-		// https://www.youtube.com/watch?v=bbTqI0oqL5U&t=596s&ab_channel=TECHDOSE
-	auto onSegment = [&](fPoint3D p, fPoint3D q, fPoint3D r)
-	{
-		if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
-			q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
-			return true;
-
-		return false;
-	};
-
-	// To find orientation of ordered triplet (p, q, r). 
-	// The function returns following values 
-	// 0 --> p, q and r are colinear 
-	// 1 --> Clockwise 
-	// 2 --> Counterclockwise 
-	auto orientation = [&](fPoint3D p, fPoint3D q, fPoint3D r)
-	{
-		// See https://www.geeksforgeeks.org/orientation-3-ordered-points/ 
-		// for details of below formula. 
-		int16_t val = (q.y - p.y) * (r.x - q.x) -
-			(q.x - p.x) * (r.y - q.y);
-
-		if (val == 0) return 0;			// colinear 
-
-		return (val > 0) ? 1 : 2;		// clock or counterclock wise 
-	};
-
-	// The main function that returns true if line segment 'p1q1' 
-	// and 'p2q2' intersect. 
-	auto doIntersect = [&](fPoint3D p1, fPoint3D q1, fPoint3D p2, fPoint3D q2)
-	{
-		// Find the four orientations needed for general and 
-		// special cases 
-		int16_t o1 = orientation(p1, q1, p2);
-		int16_t o2 = orientation(p1, q1, q2);
-		int16_t o3 = orientation(p2, q2, p1);
-		int16_t o4 = orientation(p2, q2, q1);
-
-		// General case 
-		if (o1 != o2 && o3 != o4)
-			return true;
-
-		// Special Cases 
-		// p1, q1 and p2 are colinear and p2 lies on segment p1q1 
-		if (o1 == 0 && onSegment(p1, p2, q1)) return true;
-
-		// p1, q1 and q2 are colinear and q2 lies on segment p1q1 
-		if (o2 == 0 && onSegment(p1, q2, q1)) return true;
-
-		// p2, q2 and p1 are colinear and p1 lies on segment p2q2 
-		if (o3 == 0 && onSegment(p2, p1, q2)) return true;
-
-		// p2, q2 and q1 are colinear and q1 lies on segment p2q2 
-		if (o4 == 0 && onSegment(p2, q1, q2)) return true;
-
-		return false; // Doesn't fall in any of the above cases 
-	};
+	
 
 	// lambda for checking edges of screen
 	auto on_screen = [&](triangle tr)
 	{
 
-		if (crossing_number(tr, _left_x, _top_y)) return true;
-		if (crossing_number(tr, _right_x, _top_y)) return true;
-		if (crossing_number(tr, _left_x, _bottom_y)) return true;
-		if (crossing_number(tr, _right_x, _bottom_y)) return true;
+		if (crossingNumber(tr, _left_x, _top_y)) return true;
+		if (crossingNumber(tr, _right_x, _top_y)) return true;
+		if (crossingNumber(tr, _left_x, _bottom_y)) return true;
+		if (crossingNumber(tr, _right_x, _bottom_y)) return true;
 
 		for (int16_t i = 0; i < 3; i++)					// One point on screen or more
 		{
@@ -737,10 +713,10 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	};
 
 	// Show net
-	/*DrawLineBresenham(_left_x, _top_y, _right_x, _top_y, PIXEL_SOLID, FG_GREY);
-	DrawLineBresenham(_left_x, _top_y, _left_x, _bottom_y, PIXEL_SOLID, FG_GREY);
-	DrawLineBresenham(_left_x, _bottom_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
-	DrawLineBresenham(_right_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);*/
+	//DrawLineBresenham(_left_x, _top_y, _right_x, _top_y, PIXEL_SOLID, FG_GREY);
+	//DrawLineBresenham(_left_x, _top_y, _left_x, _bottom_y, PIXEL_SOLID, FG_GREY);
+	//DrawLineBresenham(_left_x, _bottom_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
+	//DrawLineBresenham(_right_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
 
 
 	// Delete all disjoin polygons
@@ -775,10 +751,10 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 		{
 			int16_t count_point = 0;
 
-			if (crossing_number(tempTriangles.front(), _left_x, _top_y)) count_point++;
-			if (crossing_number(tempTriangles.front(), _right_x, _top_y)) count_point++;
-			if (crossing_number(tempTriangles.front(), _left_x, _bottom_y)) count_point++;
-			if (crossing_number(tempTriangles.front(), _right_x, _bottom_y)) count_point++;
+			if (crossingNumber(tempTriangles.front(), _left_x, _top_y)) count_point++;
+			if (crossingNumber(tempTriangles.front(), _right_x, _top_y)) count_point++;
+			if (crossingNumber(tempTriangles.front(), _left_x, _bottom_y)) count_point++;
+			if (crossingNumber(tempTriangles.front(), _right_x, _bottom_y)) count_point++;
 
 			if (count_point == 4)							// Surrounding polygon
 			{
@@ -837,10 +813,12 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 }
 
 std::vector<Graphics::triangle> Graphics::RobertsAlgorithm(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& view_point,
-	fPoint3D& barycenter, int16_t c, int16_t col)
+	fPoint3D& barycenter, int16_t sym, int16_t col, int16_t col_edge)
 {
 	fPoint3D vec1, vec2;
 	std::vector<triangle> vecVisibleSurfaces;
+
+	bool its_edge = false;
 
 	for (auto& tri : vecTrianglesToRaster)
 	{
@@ -860,26 +838,73 @@ std::vector<Graphics::triangle> Graphics::RobertsAlgorithm(std::vector<triangle>
 
 		if ((Vector_DotProduct(v, view_point) + d) > 0.0f)
 		{
-			std::vector<fPoint2D> points(3);
-			for (int16_t i = 0; i < 3; i++)
-			{
-				points[i].x = tri.points[i].x;
-				points[i].y = tri.points[i].y;
-			}
-			
-			
-			ShadingPolygonsScanLine(points, c, col);
-			DrawPolygons(points, PIXEL_SOLID, FG_WHITE);
-			//ShadingPolygonsFloodFillRecursion(points, c, col, FG_WHITE);
+			// If its edge
+			if (checkPointAndSegment(tri.points[0], tri.points[2], tri.points[1])) its_edge = true;
+			else if (checkPointAndSegment(tri.points[0], tri.points[1], tri.points[2])) its_edge = true;
+			else if (checkPointAndSegment(tri.points[1], tri.points[0], tri.points[2])) its_edge = true;
 
-			vecVisibleSurfaces.push_back(tri);
+
+			if (!its_edge)
+			{
+				std::vector<fPoint2D> points(3);
+				for (int16_t i = 0; i < 3; i++)
+				{
+					points[i].x = tri.points[i].x;
+					points[i].y = tri.points[i].y;
+				}
+
+				//ShadingPolygonsScanLine(points, sym, col);
+				DrawPolygons(points, sym, col_edge);
+				//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
+				ShadingPolygonsFloodFillRecursion(points, sym, col, col_edge);
+
+				vecVisibleSurfaces.push_back(tri);
+			}
+			its_edge = false;
 		}
 	}
 
 	return vecVisibleSurfaces;
 }
 
-void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
+void Graphics::PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int16_t sym, int16_t col, int16_t col_edge)
+{
+	std::vector<fPoint2D> lines(3);
+	int16_t c = FG_DARK_GREEN;
+
+	bool its_edge = false;
+	for (auto& tri : vecTrianglesToRaster)
+	{
+		// If its edge
+		if (checkPointAndSegment(tri.points[0], tri.points[2], tri.points[1])) its_edge = true;
+		else if (checkPointAndSegment(tri.points[0], tri.points[1], tri.points[2])) its_edge = true;
+		else if (checkPointAndSegment(tri.points[1], tri.points[0], tri.points[2])) its_edge = true;
+
+
+		if (!its_edge)
+		{
+			for (int16_t i = 0; i < 3; i++)
+			{
+				lines[i].x = tri.points[i].x;
+				lines[i].y = tri.points[i].y;
+			}
+
+			// Выводим на экран
+
+			//ShadingPolygonsScanLine(lines, sym, col);
+			if (c == FG_GREY) c++;
+
+			DrawPolygons(lines, sym, col_edge);
+			ShadingPolygonsFloodFillRecursion(lines, sym, c, col_edge);
+			DrawPolygons(lines, sym, c);
+			c++;
+			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
+		}
+		its_edge = false;
+	}
+}
+
+void Graphics::DrawShadowInf(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
 {
 	std::vector<triangle> vecShadow = vecTrianglesToRaster;
 
@@ -887,9 +912,22 @@ void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D&
 	{
 		for (int16_t i = 0; i < 3; i++)
 		{
-			tri.points[i].x -= light.x * (tri.points[i].y / light.y);
-			tri.points[i].z += light.z * (tri.points[i].y / light.y);
-			tri.points[i].y = 0.85f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 10.0f;
+			// Infinity light:
+
+			//tri.points[i].x -= light.x * (tri.points[i].y / light.y);
+			//tri.points[i].z -= light.z * (tri.points[i].y / light.y);
+			//tri.points[i].y = 0.80f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 10.0f;
+
+
+			// Local light:
+
+			tri.points[i].x = tri.points[i].x + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y)
+				* (tri.points[i].x - light.x) / (tri.points[i].y - light.y);
+
+			tri.points[i].z = tri.points[i].z + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y) 
+				* (tri.points[i].z - light.z) / (tri.points[i].y - light.y);
+
+			tri.points[i].y = 0.80f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 5.0f;
 		}
 	}
 

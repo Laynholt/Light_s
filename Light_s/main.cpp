@@ -4,7 +4,7 @@ int main()
 {
 	NewGarphics game;
 	
-	if (!game.ConstructConsole(240, 120, 4, 4))
+	if (!game.ConstructConsole(240, 160, 4, 4))
 		game.Loop();
 
 	return 0;

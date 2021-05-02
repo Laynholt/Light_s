@@ -6,62 +6,95 @@ void NewGarphics::OnUserCreate()
 
 	shapes[0].tris =
 	{
-			// SOUTH
-			{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 0.0f },
-			{ 0.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+		// SOUTH
+			//{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 0.0f },
+			//{ 0.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 
-			// EAST                                                      
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+			//// EAST                                                      
+			//{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
+			//{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 1.0f },
 
-			// NORTH                                                     
-			{ 1.0f, 0.0f, 1.0f,    1.0f, 2.0f, 1.0f,    0.0f, 2.0f, 1.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 2.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+			//// NORTH                                                     
+			//{ 1.0f, 0.0f, 1.0f,    1.0f, 2.0f, 1.0f,    0.0f, 2.0f, 1.0f },
+			//{ 1.0f, 0.0f, 1.0f,    0.0f, 2.0f, 1.0f,    0.0f, 0.0f, 1.0f },
 
-			// WEST                                                      
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 2.0f, 1.0f,    0.0f, 2.0f, 0.0f },
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 2.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+			//// WEST                                                      
+			//{ 0.0f, 0.0f, 1.0f,    0.0f, 2.0f, 1.0f,    0.0f, 2.0f, 0.0f },
+			//{ 0.0f, 0.0f, 1.0f,    0.0f, 2.0f, 0.0f,    0.0f, 0.0f, 0.0f },
 
-			// TOP                                                       
-			{ 0.0f, 2.0f, 0.0f,    0.0f, 2.0f, 1.0f,    1.0f, 2.0f, 1.0f },
-			{ 0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 2.0f, 0.0f },
+			//// TOP                                                       
+			//{ 0.0f, 2.0f, 0.0f,    0.0f, 2.0f, 1.0f,    1.0f, 2.0f, 1.0f },
+			//{ 0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 2.0f, 0.0f },
 
-			// BOTTOM                                                    
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+			//// BOTTOM                                                    
+			//{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
+			//{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+
+		// Основание
+			{ 0.0f, 0.0f, 0.0f,    2.0f, 0.0f, 0.0f,    1.0f, 0.0f, 2.0f },
+
+			// Перед                                                     
+			{ 0.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    2.0f, 0.0f, 0.0f },
+
+			// Право                                                       
+			{ 2.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 2.0f },
+
+			// Лево                                                    
+			{ 1.0f, 0.0f, 2.0f,    1.0f, 2.0f, 1.0f,    0.0f, 0.0f, 0.0f },
+
+			
 	};
 
 	shapes[1].tris =
 	{
-		// SOUTH
-		{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 0.0f },
-		{ 0.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+		// Основание
+			{ 0.0f, 0.0f, 0.0f,    2.0f, 0.0f, 0.0f,    1.0f, 0.0f, 2.0f },
 
-		// EAST                                                      
-		{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
-		{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+			// Перед                                                     
+			{ 0.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    2.0f, 0.0f, 0.0f },
 
-		// WEST                                                      
-		{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
-		{ 0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 1.0f,    1.0f, 2.0f, 1.0f },
+			// Право                                                       
+			{ 2.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 2.0f },
 
-		// TOP                                                       
-		{ 0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 2.0f, 0.0f },
+			// Лево                                                    
+			{ 1.0f, 0.0f, 2.0f,    1.0f, 2.0f, 1.0f,    0.0f, 0.0f, 0.0f },
 
-		// BOTTOM                                                    
-		{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+		//// SOUTH
+		//{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 0.0f },
+		//{ 0.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+
+		//// EAST                                                      
+		//{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
+		//{ 1.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+
+		//// WEST                                                      
+		//{ 0.0f, 0.0f, 0.0f,    0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f },
+		//{ 0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 1.0f,    1.0f, 2.0f, 1.0f },
+
+		//// TOP                                                       
+		//{ 0.0f, 2.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 2.0f, 0.0f },
+
+		//// BOTTOM                                                    
+		//{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 	};
 
 
 	matProj = Matrix_MakeProjection(90.0f, static_cast<float>(GetConsoleHeight()) / static_cast<float>(GetConsoleWidth()), 0.1f, 1000.0f);
 
-	lightINF.x = 1.0f;
+	//lightINF.x = 1.0f;
+	//lightINF.y = -100.0f;
+	//lightINF.z = 1.0f;
+
+	lightINF.x = iConsoleWidth / 2;
 	lightINF.y = -100.0f;
 	lightINF.z = 1.0f;
 	
 	scale = 1.0f;							
-	_x = 0.65f, _y = 0.5f; 
+	_x = 2.35f, _y = 1.2f; 
 	fThetaX = fThetaY = fThetaZ = 0.0f;
+
+	fThetaX = 1.0f;
+	fThetaY = 2.0f;
 }
 
 void NewGarphics::OnUserUpdate(float fElapsedTime)
@@ -102,6 +135,8 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 	if (GetKey(L'G').bHeld)		// Move to down
 		_y += 0.01f;
 
+	if (GetKey(L'L').bHeld)
+		lightINF.x += 1.0f;
 
 	mat4x4 matRotX, matRotY, matRotZ;
 	matRotX = Matrix_MakeRotationX(fThetaX * 0.5f);
@@ -118,10 +153,9 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 	WorldMatrix = Matrix_MakeIdentity();
 	WorldMatrix = matRotY * matRotX * matRotZ * ScalingMatrix * TranslationMatrix;
 
-	std::vector<fPoint2D> lines(3);
 	std::vector<triangle> vecTrianglesToRaster;
 
-	float  t = 0.0f;
+	float  t = 0.0f;					// move X coor for another figure
 	int16_t tri_color = FG_DARK_BLUE;
 	int16_t count_tris = 0;
 	for (auto& sh: shapes) 
@@ -146,8 +180,8 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 				triProjected.points[i].x += _x + t;
 				triProjected.points[i].y += _y;
 
-				triProjected.points[i].x *= 0.2f * static_cast<float>(GetConsoleWidth());
-				triProjected.points[i].y *= 0.2f * static_cast<float>(GetConsoleHeight());
+				triProjected.points[i].x *= 0.135f * static_cast<float>(GetConsoleWidth());
+				triProjected.points[i].y *= 0.135f * static_cast<float>(GetConsoleHeight());
 
 				// Counting barycenter
 				barycenter += triProjected.points[i];
@@ -169,7 +203,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			{
 				float z1 = (t1.points[0].z + t1.points[1].z + t1.points[2].z) / 3.0f;
 				float z2 = (t2.points[0].z + t2.points[1].z + t2.points[2].z) / 3.0f;
-				return z1 < z2;
+				return z1 > z2; // was >
 			});
 
 		// Round all coord of points
@@ -183,30 +217,18 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 		}
 
 		// Draw
-		DrawShadow(vecTrianglesToRaster, lightINF);
+		DrawShadowInf(vecTrianglesToRaster, lightINF);
 		//WarnockAlgorithm(vecTrianglesToRaster, 0.0f, iConsoleWidth - 1, 0.0f, iConsoleHeight - 1);
 
-		std::vector<triangle> vecVisibleSurfaces;
-		fPoint3D view_point = { static_cast<float>(iConsoleWidth) / 2.0f, static_cast<float>(iConsoleHeight) / 2.0f, -100.0f };
+		//std::vector<triangle> vecVisibleSurfaces;
+		//fPoint3D view_point = { static_cast<float>(iConsoleWidth) / 2.0f, static_cast<float>(iConsoleHeight) / 2.0f, -100.0f };
 
-		vecVisibleSurfaces = RobertsAlgorithm(vecTrianglesToRaster, view_point, barycenter);
-		RobertsAlgorithm(vecVisibleSurfaces, lightINF, barycenter, PIXEL_SOLID, FG_DARK_BLUE);
+		//vecVisibleSurfaces = RobertsAlgorithm(vecTrianglesToRaster, view_point, barycenter);
+		//RobertsAlgorithm(vecVisibleSurfaces, lightINF, barycenter, PIXEL_SOLID, FG_DARK_BLUE);
 
-		//for (auto& tri : vecTrianglesToRaster)
-		//{
-		//	for (int16_t i = 0; i < 3; i++)
-		//	{
-		//		lines[i].x = tri.points[i].x;
-		//		lines[i].y = tri.points[i].y;
-		//	}
-
-		//	// Выводим на экран
-
-		//	//ShadingPolygonsScanLine(lines, PIXEL_SOLID, FG_DARK_BLUE);
-		//	DrawPolygons(lines, PIXEL_SOLID, FG_GREY);
-		//}
+		PainterAlgorithm(vecTrianglesToRaster);
 		
-		t += 2.4f;
+		t += 2.5f;
 		barycenter = 0.0f;
 		count_tris = 0;
 		vecTrianglesToRaster.clear();
