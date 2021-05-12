@@ -6,6 +6,7 @@ Graphics::Graphics()
 	iConsoleHeight = 60;
 
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	m_hConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
 
 	console = nullptr;
 	rectWindow = { 0 };
@@ -13,6 +14,14 @@ Graphics::Graphics()
 	std::memset(m_keyNewState, 0, 256 * sizeof(short));
 	std::memset(m_keyOldState, 0, 256 * sizeof(short));
 	std::memset(m_keys, 0, 256 * sizeof(sKeyState));
+
+	std::memset(m_mouse, 0, 5 * sizeof(sKeyState));
+	std::memset(m_mouseOldState, 0, 5 * sizeof(bool));
+	std::memset(m_mouseNewState, 0, 5 * sizeof(bool));
+	m_mousePosX = 0;
+	m_mousePosY = 0;
+
+	m_bConsoleInFocus = true;
 
 	wsApp_name = L"Light\'s";
 }
@@ -23,8 +32,10 @@ Graphics::~Graphics()
 	delete[] console;
 }
 
-int16_t Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h)
+int16_t Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h, std::wstring Console_name)
 {
+	wsApp_name = Console_name;
+
 	if (hConsole == INVALID_HANDLE_VALUE)
 		return Error(L"Handle error.");
 
@@ -70,6 +81,10 @@ int16_t Graphics::ConstructConsole(int16_t width, int16_t height, int16_t font_w
 	rectWindow = { 0, 0, (int16_t)iConsoleWidth - 1, (int16_t)iConsoleHeight - 1 };
 	if (!SetConsoleWindowInfo(hConsole, TRUE, &rectWindow))
 		return Error(L"SetConsoleWindowInfo");
+
+	// Set flags to allow mouse input		
+	if (!SetConsoleMode(m_hConsoleIn, ENABLE_EXTENDED_FLAGS | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT))
+		return Error(L"SetConsoleMode");
 
 	// Allocate memory for screen buffer
 	console = new CHAR_INFO[iConsoleWidth * iConsoleHeight];
@@ -166,10 +181,84 @@ void Graphics::Loop()
 			m_keyOldState[i] = m_keyNewState[i];
 		}
 
+
+		// Handle Mouse Input - Check for window events
+		INPUT_RECORD inBuf[32];
+		DWORD events = 0;
+		GetNumberOfConsoleInputEvents(m_hConsoleIn, &events);
+		if (events > 0)
+			ReadConsoleInput(m_hConsoleIn, inBuf, events, &events);
+
+		// Handle events - we only care about mouse clicks and movement
+		// for now
+		for (DWORD i = 0; i < events; i++)
+		{
+			switch (inBuf[i].EventType)
+			{
+			case FOCUS_EVENT:
+			{
+				m_bConsoleInFocus = inBuf[i].Event.FocusEvent.bSetFocus;
+			}
+			break;
+
+			case MOUSE_EVENT:
+			{
+				switch (inBuf[i].Event.MouseEvent.dwEventFlags)
+				{
+				case MOUSE_MOVED:
+				{
+					m_mousePosX = inBuf[i].Event.MouseEvent.dwMousePosition.X;
+					m_mousePosY = inBuf[i].Event.MouseEvent.dwMousePosition.Y;
+				}
+				break;
+
+				case 0:
+				{
+					for (int16_t m = 0; m < 5; m++)
+						m_mouseNewState[m] = (inBuf[i].Event.MouseEvent.dwButtonState & (1 << m)) > 0;
+
+				}
+				break;
+
+				default:
+					break;
+				}
+			}
+			break;
+
+			default:
+				break;
+				// We don't care just at the moment
+			}
+		}
+
+		for (int16_t m = 0; m < 5; m++)
+		{
+			m_mouse[m].bPressed = false;
+			m_mouse[m].bReleased = false;
+
+			if (m_mouseNewState[m] != m_mouseOldState[m])
+			{
+				if (m_mouseNewState[m])
+				{
+					m_mouse[m].bPressed = true;
+					m_mouse[m].bHeld = true;
+				}
+				else
+				{
+					m_mouse[m].bReleased = true;
+					m_mouse[m].bHeld = false;
+				}
+			}
+
+			m_mouseOldState[m] = m_mouseNewState[m];
+		}
+
+
 		if (bKeyWasPressed)
 		{
 			OnUserUpdate(fElapsedTime);
-			bKeyWasPressed = false;
+			//bKeyWasPressed = false;
 		}
 
 		// Update Title & Present Screen Buffer
@@ -713,10 +802,10 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	};
 
 	// Show net
-	//DrawLineBresenham(_left_x, _top_y, _right_x, _top_y, PIXEL_SOLID, FG_GREY);
-	//DrawLineBresenham(_left_x, _top_y, _left_x, _bottom_y, PIXEL_SOLID, FG_GREY);
-	//DrawLineBresenham(_left_x, _bottom_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
-	//DrawLineBresenham(_right_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
+	/*DrawLineBresenham(_left_x, _top_y, _right_x, _top_y, PIXEL_SOLID, FG_GREY);
+	DrawLineBresenham(_left_x, _top_y, _left_x, _bottom_y, PIXEL_SOLID, FG_GREY);
+	DrawLineBresenham(_left_x, _bottom_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
+	DrawLineBresenham(_right_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);*/
 
 
 	// Delete all disjoin polygons
@@ -742,7 +831,7 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 			points[i].y = tempTriangles.front().points[i].y;
 		}
 
-		ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, _top_y, _bottom_y, _left_x, _right_x);
+		//ShadingPolygonsScanLine(points, PIXEL_SOLID, FG_BLUE, _top_y, _bottom_y, _left_x, _right_x);
 	}
 												// If we have many polygons
 	else if (tempTriangles.size() > 1)
@@ -758,7 +847,7 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 
 			if (count_point == 4)							// Surrounding polygon
 			{
-				//Fill(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
+				//Fill(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_DARK_YELLOW);
 				Fill(_left_x, _top_y, _right_x, _bottom_y, tempTriangles.front().sym, tempTriangles.front().col);
 			}
 															// Split into windows
@@ -807,7 +896,8 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 
 		else					// else we have i pixel cube then draw it
 		{
-			Fill(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_BLUE);
+			//Fill(_left_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_RED);
+			Fill(_left_x, _top_y, _right_x, _bottom_y, tempTriangles.front().sym, tempTriangles.front().col);
 		}
 	}
 }
@@ -836,7 +926,7 @@ std::vector<Graphics::triangle> Graphics::RobertsAlgorithm(std::vector<triangle>
 			d *= -1.0f; 
 		}
 
-		if ((Vector_DotProduct(v, view_point) + d) > 0.0f)
+		if ((Vector_DotProduct(v, view_point) + d) < 0.0f)
 		{
 			// If its edge
 			if (checkPointAndSegment(tri.points[0], tri.points[2], tri.points[1])) its_edge = true;
@@ -853,10 +943,10 @@ std::vector<Graphics::triangle> Graphics::RobertsAlgorithm(std::vector<triangle>
 					points[i].y = tri.points[i].y;
 				}
 
-				//ShadingPolygonsScanLine(points, sym, col);
+				ShadingPolygonsScanLine(points, sym, col);
 				DrawPolygons(points, sym, col_edge);
 				//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
-				ShadingPolygonsFloodFillRecursion(points, sym, col, col_edge);
+				//ShadingPolygonsFloodFillRecursion(points, sym, col, col_edge);
 
 				vecVisibleSurfaces.push_back(tri);
 			}
@@ -870,7 +960,6 @@ std::vector<Graphics::triangle> Graphics::RobertsAlgorithm(std::vector<triangle>
 void Graphics::PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int16_t sym, int16_t col, int16_t col_edge)
 {
 	std::vector<fPoint2D> lines(3);
-	int16_t c = FG_DARK_GREEN;
 
 	bool its_edge = false;
 	for (auto& tri : vecTrianglesToRaster)
@@ -891,20 +980,19 @@ void Graphics::PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int
 
 			// Выводим на экран
 
-			//ShadingPolygonsScanLine(lines, sym, col);
-			if (c == FG_GREY) c++;
+			ShadingPolygonsScanLine(lines, sym, tri.col);
 
-			DrawPolygons(lines, sym, col_edge);
-			ShadingPolygonsFloodFillRecursion(lines, sym, c, col_edge);
-			DrawPolygons(lines, sym, c);
-			c++;
+			//DrawPolygons(lines, sym, col_edge);
+			//ShadingPolygonsFloodFillRecursion(lines, sym, tri.col, col_edge);
+			DrawPolygons(lines, sym, tri.col);
+
 			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
 		}
 		its_edge = false;
 	}
 }
 
-void Graphics::DrawShadowInf(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
+void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
 {
 	std::vector<triangle> vecShadow = vecTrianglesToRaster;
 
@@ -914,9 +1002,9 @@ void Graphics::DrawShadowInf(std::vector<triangle>& vecTrianglesToRaster, fPoint
 		{
 			// Infinity light:
 
-			//tri.points[i].x -= light.x * (tri.points[i].y / light.y);
-			//tri.points[i].z -= light.z * (tri.points[i].y / light.y);
-			//tri.points[i].y = 0.80f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 10.0f;
+			/*tri.points[i].x -= light.x * (tri.points[i].y / light.y);
+			tri.points[i].z -= light.z * (tri.points[i].y / light.y);
+			tri.points[i].y = 0.30f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 50.0f;*/
 
 
 			// Local light:
@@ -927,7 +1015,7 @@ void Graphics::DrawShadowInf(std::vector<triangle>& vecTrianglesToRaster, fPoint
 			tri.points[i].z = tri.points[i].z + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y) 
 				* (tri.points[i].z - light.z) / (tri.points[i].y - light.y);
 
-			tri.points[i].y = 0.80f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 5.0f;
+			tri.points[i].y = 0.70f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 20.0f;
 		}
 	}
 

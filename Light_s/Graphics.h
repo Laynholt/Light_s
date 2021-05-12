@@ -80,6 +80,7 @@ class Graphics
 protected:
 	int16_t iConsoleWidth, iConsoleHeight;				// Size of console
 	HANDLE hConsole;									// Current output handle
+	HANDLE m_hConsoleIn;
 	HANDLE hOriginalConsole;							// Original handle (need when we got some error)
 	CHAR_INFO* console;									// Array of characters
 	SMALL_RECT rectWindow;								
@@ -97,16 +98,28 @@ protected:
 	int16_t m_keyNewState[256];
 	sKeyState m_keys[256];
 
+	sKeyState m_mouse[5];
+	bool m_mouseOldState[5];
+	bool m_mouseNewState[5];
+	bool m_bConsoleInFocus;
+
+	int16_t m_mousePosX;
+	int16_t m_mousePosY;
+
 	// Main methods
 public:
 	Graphics();
 	~Graphics();
 
-	int16_t ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h);
+	int16_t ConstructConsole(int16_t width, int16_t height, int16_t font_w, int16_t font_h, std::wstring Console_name = L"Light\'s");
 
 	int16_t GetConsoleWidth();
 	int16_t GetConsoleHeight();
 	sKeyState& GetKey(int16_t key_id);
+	int GetMouseX() { return m_mousePosX; }
+	int GetMouseY() { return m_mousePosY; }
+	sKeyState GetMouse(int nMouseButtonID) { return m_mouse[nMouseButtonID]; }
+	bool IsFocused() { return m_bConsoleInFocus; }
 
 protected:
 	int16_t Error(const wchar_t* msg);
@@ -247,7 +260,7 @@ protected:
 
 	public:
 		fPoint3D() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
-		fPoint3D(float x, float y, float z) : x(x), y(y), z(z), w(1.0f) {}
+		fPoint3D(float x, float y, float z, float w = 1.0f) : x(x), y(y), z(z), w(1.0f) {}
 
 		fPoint3D& operator=(const fPoint3D& obj)
 		{
@@ -312,19 +325,19 @@ protected:
 
 		fPoint3D operator+(const fPoint3D& obj)
 		{
-			return fPoint3D(x + obj.x, y + obj.y, z + obj.z);
+			return fPoint3D(x + obj.x, y + obj.y, z + obj.z, w);
 		}
 		fPoint3D operator-(const fPoint3D& obj)
 		{
-			return fPoint3D(x - obj.x, y - obj.y, z - obj.z);
+			return fPoint3D(x - obj.x, y - obj.y, z - obj.z, w);
 		}
 		fPoint3D operator*(float value)
 		{
-			return fPoint3D(x * value, y * value, z * value);
+			return fPoint3D(x * value, y * value, z * value, w);
 		}
 		fPoint3D operator/(float value)
 		{
-			return fPoint3D(x / value, y / value, z / value);
+			return fPoint3D(x / value, y / value, z / value, w);
 		}
 	};
 	struct triangle
@@ -399,7 +412,7 @@ public:
 	void PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int16_t sym = PIXEL_SOLID, int16_t col = FG_DARK_YELLOW,
 		int16_t col_edge = FG_GREY);
 
-	void DrawShadowInf(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
+	void DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
 
 	void MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m);
 
