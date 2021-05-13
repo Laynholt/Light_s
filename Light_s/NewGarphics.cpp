@@ -91,7 +91,7 @@ void NewGarphics::OnUserCreate()
 	
 	scale = 1.0f;							
 	//_x = 2.35f, _y = 1.2f; 
-	_x = 0.5f; _y = 0.5f; _z = 5.0f;
+	_x = 0.5f; _y = 0.5f; _z = 4.0f;
 	fThetaX = fThetaY = fThetaZ = 0.0f;
 }
 
@@ -137,25 +137,25 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 	//if (GetKey(L'H').bHeld)		// Move to down
 	//	_z += 0.1f;
 
-	if (GetKey(VK_LBUTTON).bHeld)
+	if (IsFocused())
 	{
-		if (GetMouseX() >= 0.9f * iConsoleWidth)		// Move to right
-			_x += 0.005f;
-		if (GetMouseX() <= 0.2f * iConsoleWidth)		// Move to left
-			_x -= 0.005f;
-		if (GetMouseY() <= 0.2f * iConsoleHeight)		// Move to up
-			_y -= 0.005f;
-		if (GetMouseY() >= 0.9f * iConsoleHeight)		// Move to down
-			_y += 0.005f;
-		if ((GetMouseX() >= 0.40f * iConsoleWidth) && (GetMouseX() <= 0.60f * iConsoleWidth) 
-			&& (GetMouseY() >= 0.40f * iConsoleHeight) && (GetMouseY() <= 0.60f * iConsoleHeight))		// Move to forward
-			_z += 0.1f;	
-	}
-	else if (GetKey(VK_RBUTTON).bHeld)
-	{
-		if ((GetMouseX() >= 0.40f * iConsoleWidth) && (GetMouseX() <= 0.60f * iConsoleWidth)
-			&& (GetMouseY() >= 0.40f * iConsoleHeight) && (GetMouseY() <= 0.60f * iConsoleHeight))		// Move to back
-			_z = (_z > 1.0f) ? _z - 0.1f : _z;
+		if (GetKey(VK_LBUTTON).bHeld)
+		{
+			if (GetMouseX() >= 0.9f * iConsoleWidth)		// Move to right
+				_x += 0.005f;
+			if (GetMouseX() <= 0.2f * iConsoleWidth)		// Move to left
+				_x -= 0.005f;
+			if (GetMouseY() <= 0.2f * iConsoleHeight)		// Move to up
+				_y -= 0.005f;
+			if (GetMouseY() >= 0.9f * iConsoleHeight)		// Move to down
+				_y += 0.005f;
+			if ((GetMouseX() >= 0.40f * iConsoleWidth) && (GetMouseX() <= 0.60f * iConsoleWidth)
+				&& (GetMouseY() >= 0.35f * iConsoleHeight) && (GetMouseY() <= 0.49f * iConsoleHeight))		// Move to forward
+				_z = (_z < 7.0f) ? _z + 0.1f : _z;
+			if ((GetMouseX() >= 0.40f * iConsoleWidth) && (GetMouseX() <= 0.60f * iConsoleWidth)
+				&& (GetMouseY() >= 0.51f * iConsoleHeight) && (GetMouseY() <= 0.65f * iConsoleHeight))		// Move to back
+				_z = (_z > 3.0f) ? _z - 0.1f : _z;
+		}
 	}
 
 
@@ -198,6 +198,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			// Scale into view, we moved the normalising into cartesian space
 			// out of the matrix.vector function from the previous videos, so
 			// do this manually
+
 			triProjected.points[0] = triProjected.points[0] / triProjected.points[0].w;
 			triProjected.points[1] = triProjected.points[1] / triProjected.points[1].w;
 			triProjected.points[2] = triProjected.points[2] / triProjected.points[2].w;
@@ -260,8 +261,8 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 		std::vector<triangle> vecVisibleSurfaces;
 		fPoint3D view_point = { static_cast<float>(iConsoleWidth) / 2.0f, static_cast<float>(iConsoleHeight) / 2.0f, -100.0f };
 
-		vecVisibleSurfaces = RobertsAlgorithm(vecTrianglesToRaster, view_point, barycenter);
-		RobertsAlgorithm(vecVisibleSurfaces, light, barycenter, PIXEL_SOLID, FG_DARK_BLUE);
+		vecVisibleSurfaces = RobertsAlgorithm(vecTrianglesToRaster, view_point, barycenter, PIXEL_SOLID, FG_DARK_BLUE);
+		RobertsAlgorithm(vecVisibleSurfaces, light, barycenter, PIXEL_SOLID, FG_BLUE);
 
 		//PainterAlgorithm(vecTrianglesToRaster);
 		

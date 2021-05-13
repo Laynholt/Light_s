@@ -260,7 +260,7 @@ protected:
 
 	public:
 		fPoint3D() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
-		fPoint3D(float x, float y, float z, float w = 1.0f) : x(x), y(y), z(z), w(1.0f) {}
+		fPoint3D(float x, float y, float z, float w = 1.0f) : x(x), y(y), z(z), w(w) {}
 
 		fPoint3D& operator=(const fPoint3D& obj)
 		{

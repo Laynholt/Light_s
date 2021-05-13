@@ -1000,12 +1000,13 @@ void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D&
 	{
 		for (int16_t i = 0; i < 3; i++)
 		{
+			tri.points[i].z *= tri.points[i].w;
+
 			// Infinity light:
 
-			/*tri.points[i].x -= light.x * (tri.points[i].y / light.y);
-			tri.points[i].z -= light.z * (tri.points[i].y / light.y);
-			tri.points[i].y = 0.30f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 50.0f;*/
-
+			//tri.points[i].x -= light.x * (tri.points[i].y / light.y);
+			//tri.points[i].z = -tri.points[i].z - light.z * (tri.points[i].y / light.y);
+			//tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 10.0f;
 
 			// Local light:
 
@@ -1015,7 +1016,7 @@ void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D&
 			tri.points[i].z = tri.points[i].z + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y) 
 				* (tri.points[i].z - light.z) / (tri.points[i].y - light.y);
 
-			tri.points[i].y = 0.70f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 20.0f;
+			tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 8.0f;
 		}
 	}
 
