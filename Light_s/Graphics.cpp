@@ -1099,6 +1099,73 @@ void Graphics::ZBufferAlgorithm(std::vector<triangle>& vecTriangleToRaster)
 	}
 }
 
+void Graphics::ZBufferAlgorithmModified(std::vector<triangle>& vecTriangleToRaster)
+{
+	/*
+		Source Code:
+			https://github.com/yuanqing-zhang/graphics-zbuffer/blob/master/src/zbuffer/basic_zbuffer.cpp
+			https://github.com/yuanqing-zhang/graphics-zbuffer/blob/master/src/zbuffer/utils.cpp
+	*/
+
+	fPoint3D obj_center;
+	GetBarycenter3D(vecTriangleToRaster, obj_center);
+	std::vector<float> depthZ(iConsoleHeight * iConsoleWidth, 1000.0f);
+
+	fPoint3D A, B, C;
+
+	for (auto& tri : vecTriangleToRaster)
+	{
+		//scale and translate to the center of image
+		fPoint3D center(iConsoleWidth / 2, iConsoleHeight / 2, 0);
+		/*A = (tri.points[0] - obj_center) + center;
+		B = (tri.points[1] - obj_center) + center;
+		C = (tri.points[2] - obj_center) + center;*/
+
+		A = tri.points[0];
+		B = tri.points[1];
+		C = tri.points[2];
+
+		// find bounding box of triangle
+		float minx = min(min(A.x, B.x), C.x);
+		float maxx = max(max(A.x, B.x), C.x);
+
+		float miny = min(min(A.y, B.y), C.y);
+		float maxy = max(max(A.y, B.y), C.y);
+
+		if (minx >= iConsoleWidth - 1 || miny >= iConsoleHeight - 1) continue;
+		if (maxx <= 0 || maxy <= 0) continue;
+
+		minx = (minx < 0) ? 0 : minx;
+		miny = (miny < 0) ? 0 : miny;
+		maxx = (maxx > iConsoleWidth - 1) ? (iConsoleWidth - 1) : maxx;
+		maxy = (maxy > iConsoleHeight - 1) ? (iConsoleHeight - 1) : maxy;
+
+		// 2D projection of A,B,C
+		fPoint2D A_2d, B_2d, C_2d;
+		A_2d = A;
+		B_2d = B;
+		C_2d = C;
+
+		for (int i = miny; i <= maxy; i++)
+		{
+			for (int j = minx; j <= maxx; j++)
+			{
+				fPoint2D P(j, i);
+				if (isPointInTriangle(A_2d, B_2d, C_2d, P))
+				{
+					float depth = CalDepth(A, B, C, P);
+					if (depth < depthZ[i * iConsoleWidth + j])
+					{
+						depthZ[i * iConsoleWidth + j] = depth;
+						console[i * iConsoleWidth + j].Attributes = tri.col;
+						console[i * iConsoleWidth + j].Char.UnicodeChar = tri.sym;
+					}
+				}
+			}
+		}
+	}
+}
+
 void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
 {
 	std::vector<triangle> vecShadow = vecTrianglesToRaster;
@@ -1142,15 +1209,6 @@ void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D&
 	}
 }
 
-void Graphics::MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m)
-{
-	for (auto& point : points)
-	{
-		point.x += m.m[1][0];
-		point.y += m.m[0][1];
-	}
-}
-
 void Graphics::GetBarycenter3D(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& barycenter)
 {
 	std::vector<fPoint3D> points;
@@ -1187,6 +1245,56 @@ void Graphics::GetBarycenter3D(std::vector<triangle>& vecTrianglesToRaster, fPoi
 		barycenter += p;
 	}
 	barycenter /= points.size();
+}
+
+bool Graphics::isPointInTriangle(fPoint2D A, fPoint2D B, fPoint2D C, fPoint2D P)
+{
+	// check whether point is in triangle in 2D
+	fPoint2D v0 = C - A;
+	fPoint2D v1 = B - A;
+	fPoint2D v2 = P - A;
+
+	float dot00 = Vector_DotProduct2D(v0, v0);
+	float dot01 = Vector_DotProduct2D(v0, v1);
+	float dot02 = Vector_DotProduct2D(v0, v2);
+	float dot11 = Vector_DotProduct2D(v1, v1);
+	float dot12 = Vector_DotProduct2D(v1, v2);
+
+	float inver = 1 / (dot00 * dot11 - dot01 * dot01);
+
+	float u = (dot11 * dot02 - dot01 * dot12) * inver;
+	if (u < 0 || u > 1)
+		return false;
+
+	float v = (dot00 * dot12 - dot01 * dot02) * inver;
+	if (v < 0 || v > 1)
+		return false;
+
+	return u + v <= 1;
+}
+
+float Graphics::CalDepth(fPoint3D A, fPoint3D B, fPoint3D C, fPoint2D P)
+{
+	fPoint3D temp1(B - A), temp2(C - A);
+	fPoint3D face_normal = Vector_CrossProduct(temp1, temp2);
+	face_normal = Vector_Normalise(face_normal);
+
+	fPoint3D line_normal(0, 0, -1);
+	line_normal = Vector_Normalise(line_normal);
+
+	fPoint3D line_p(P.x, P.y, 0);
+
+	float t;
+	t = (Vector_DotProduct(face_normal, A) - Vector_DotProduct(face_normal, line_p)) / Vector_DotProduct(face_normal, line_normal);
+
+	fPoint3D p = line_p + line_normal * t;
+
+	return p.z;
+}
+
+float Graphics::Vector_DotProduct2D(fPoint2D& v1, fPoint2D& v2)
+{
+	return (v1.x * v2.x + v1.y * v2.y);
 }
 
 float Graphics::Vector_DotProduct(fPoint3D& v1, fPoint3D& v2)

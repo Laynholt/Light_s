@@ -413,14 +413,19 @@ public:
 		int16_t col_edge = FG_GREY);
 	void ZBufferAlgorithm(std::vector<triangle>& vecTriangleToRaster);
 
-	void DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
+	void ZBufferAlgorithmModified(std::vector<triangle>& vecTriangleToRaster);
 
-	void MoveTo2D(std::vector<fPoint2D>& points, mat3x3& m);
+	void DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
 
 	void GetBarycenter3D(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& barycenter);
 
+private:
+	bool isPointInTriangle(fPoint2D A, fPoint2D B, fPoint2D C, fPoint2D P);
+	float CalDepth(fPoint3D A, fPoint3D B, fPoint3D C, fPoint2D P);
+
 	// Matrix methods (Use this for 3D)
 public:
+	float Vector_DotProduct2D(fPoint2D& v1, fPoint2D& v2);
 	float Vector_DotProduct(fPoint3D& v1, fPoint3D& v2);
 	float Vector_Length(fPoint3D& v);
 	fPoint3D Vector_Normalise(fPoint3D& v);
