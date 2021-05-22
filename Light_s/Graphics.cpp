@@ -482,6 +482,11 @@ void Graphics::ShadingPolygonsFloodFillRecursion(const std::vector<fPoint2D>& po
 	center.x = roundf(center.x);
 	center.y = roundf(center.y);
 
+	DrawLineBresenham(0, 0, iConsoleWidth - 1, 0, sym, col_edges);
+	DrawLineBresenham(0, 0, 0, iConsoleHeight - 1, sym, col_edges);
+	DrawLineBresenham(iConsoleWidth - 1, 0, iConsoleWidth - 1, iConsoleHeight - 1, sym, col_edges);
+	DrawLineBresenham(iConsoleWidth - 1, iConsoleHeight - 1, iConsoleWidth - 1, iConsoleHeight - 1, sym, col_edges);
+
 	if (center.x <= 0.0f || center.x >= iConsoleWidth || center.y <= 0.0f || center.y >= iConsoleHeight)
 	{
 		fPoint2D new_center;
@@ -504,7 +509,7 @@ void Graphics::ShadingPolygonsFloodFillRecursion(const std::vector<fPoint2D>& po
 
 	if (center.x >= 0.0f && center.x <= iConsoleWidth && center.y >= 0.0f && center.y <= iConsoleHeight)
 	{
-		CHAR_INFO* console_ptr = &console[(int16_t)center.y * iConsoleWidth + (int16_t)center.x];;
+		CHAR_INFO* console_ptr = &console[(int16_t)center.y * iConsoleWidth + (int16_t)center.x];
 
 		if (console_ptr->Attributes != col_edges && console_ptr->Attributes != col)
 			FillingFloodFill(console_ptr, center.x, center.y, sym, col, col_edges);
@@ -992,6 +997,108 @@ void Graphics::PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int
 	}
 }
 
+void Graphics::ZBufferAlgorithm(std::vector<triangle>& vecTriangleToRaster)
+{
+	std::vector<float> depthZ(iConsoleHeight*iConsoleWidth, 1000.0f);
+
+	int16_t y_max, y_min;
+	float z, delY, delX;
+	
+	std::vector<int16_t> scanex;
+	std::vector<float> scanez;
+
+	int16_t next_i = 0;
+
+	for (auto& tri : vecTriangleToRaster)
+	{
+		y_max = max(tri.points[0].y, tri.points[1].y);
+		y_max = max(y_max, tri.points[2].y);
+		y_max = (y_max > iConsoleHeight - 1) ? (iConsoleHeight - 1) : y_max;
+
+		y_min = min(tri.points[0].y, tri.points[1].y);
+		y_min = min(y_min, tri.points[2].y);
+		y_min = (y_min < 0) ? 0 : y_min;
+
+		for (int16_t y = y_min; y < y_max; y++)
+		{
+			for (size_t i = 0; i < 3; i++)
+			{
+				next_i = (i + 1) % 3;
+
+				if ((tri.points[i].y >= y && tri.points[next_i].y < y) || (tri.points[i].y < y && tri.points[next_i].y >= y))
+				{
+					// Count X & Z
+					delY = (y - tri.points[i].y) / (tri.points[next_i].y - tri.points[i].y);
+
+					scanex.push_back(tri.points[i].x + (int16_t)roundf(delY * (tri.points[next_i].x - tri.points[i].x)));
+					scanez.push_back(tri.points[i].z + delY * (tri.points[next_i].z - tri.points[i].z));
+				}
+
+				// if edge == y
+				else if (tri.points[i].y == y && tri.points[next_i].y == y)
+				{
+					scanex.push_back(tri.points[i].x);
+					scanex.push_back(tri.points[next_i].x);
+
+					scanez.push_back(tri.points[i].z);
+					scanez.push_back(tri.points[next_i].z);
+
+				}
+			}
+
+			if (scanex.size())
+			{
+				for (size_t i = 0; i < scanex.size() - 1; i += 2)
+				{
+					int16_t x1, x2;
+					float z1, z2;
+
+					next_i = (i + 1) % 3;
+
+					// Swap X1 & X2, Z1 & Z2
+					if (scanex[next_i] < scanex[i])
+					{
+						int16_t t1;
+						float t2;
+
+						t1 = scanex[i];
+						scanex[i] = scanex[next_i];
+						scanex[next_i] = t1;
+
+						t2 = scanez[i];
+						scanez[i] = scanez[next_i];
+						scanez[next_i] = t2;
+					}
+
+
+					x1 = (scanex[i] < 0) ? 0 : scanex[i];
+					x2 = (scanex[next_i] > iConsoleWidth - 1) ? (iConsoleWidth - 1) : scanex[next_i];
+
+					z1 = scanez[i];
+					z2 = scanez[next_i];
+
+					for (int16_t x = x1; x < x2; x++)
+					{
+						delX = (x - x1) / (x2 - x1);
+						z = z1 + delX * (z2 - z1);
+
+						if (z < depthZ[(int16_t)y * iConsoleWidth + (int16_t)x])
+						{
+							depthZ[(int16_t)y * iConsoleWidth + (int16_t)x] = z;
+							console[(int16_t)y * iConsoleWidth + (int16_t)x].Attributes = tri.col;
+							console[(int16_t)y * iConsoleWidth + (int16_t)x].Char.UnicodeChar = tri.sym;
+							//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
+						}
+					}
+				}
+
+				scanex.clear();
+				scanez.clear();
+			}
+		}
+	}
+}
+
 void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light)
 {
 	std::vector<triangle> vecShadow = vecTrianglesToRaster;
@@ -1004,19 +1111,19 @@ void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D&
 
 			// Infinity light:
 
-			//tri.points[i].x -= light.x * (tri.points[i].y / light.y);
-			//tri.points[i].z = -tri.points[i].z - light.z * (tri.points[i].y / light.y);
-			//tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 10.0f;
+			tri.points[i].x -= light.x * (tri.points[i].y / light.y);
+			tri.points[i].z = -tri.points[i].z - light.z * (tri.points[i].y / light.y);
+			tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 0.1f;
 
 			// Local light:
 
-			tri.points[i].x = tri.points[i].x + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y)
-				* (tri.points[i].x - light.x) / (tri.points[i].y - light.y);
+			//tri.points[i].x = tri.points[i].x + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y)
+			//	* (tri.points[i].x - light.x) / (tri.points[i].y - light.y);
 
-			tri.points[i].z = tri.points[i].z + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y) 
-				* (tri.points[i].z - light.z) / (tri.points[i].y - light.y);
+			//tri.points[i].z = tri.points[i].z + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y) 
+			//	* (tri.points[i].z - light.z) / (tri.points[i].y - light.y);
 
-			tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 8.0f;
+			//tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 0.8f;
 		}
 	}
 

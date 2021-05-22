@@ -40,7 +40,7 @@ void NewGarphics::OnUserCreate()
 		//	{ 2.0f, 0.0f, 0.0f,    1.0f, 2.0f, 1.0f,    1.0f, 0.0f, 2.0f },
 
 		//	// Лево                                                    
-		//	{ 1.0f, 0.0f, 2.0f,    1.0f, 2.0f, 1.0f,    0.0f, 0.0f, 0.0f },
+		//	{ 1.0f, 0.0f, 2.0f,    1.0f, 2.0f, 1.0f,    0.0f, 0.0f, 0.0f }
 
 			
 	};
@@ -81,13 +81,13 @@ void NewGarphics::OnUserCreate()
 
 	matProj = Matrix_MakeProjection(90.0f, static_cast<float>(GetConsoleHeight()) / static_cast<float>(GetConsoleWidth()), 0.1f, 1000.0f);
 
-	//light.x = 1.0f;
-	//light.y = -100.0f;
-	//light.z = 1.0f;
-
-	light.x = iConsoleWidth / 2;
+	light.x = 1.0f;
 	light.y = -100.0f;
-	light.z = 5.0f;
+	light.z = 1.0f;
+
+	//light.x = iConsoleWidth / 2;
+	//light.y = -100.0f;
+	//light.z = 5.0f;
 	
 	scale = 1.0f;							
 	//_x = 2.35f, _y = 1.2f; 
@@ -186,30 +186,20 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 		{
 			triangle triProjected, triTransformed;
 
-			triTransformed.points[0] = MultiplyMatrixVector(WorldMatrix, tri.points[0]);
-			triTransformed.points[1] = MultiplyMatrixVector(WorldMatrix, tri.points[1]);
-			triTransformed.points[2] = MultiplyMatrixVector(WorldMatrix, tri.points[2]);		
+			for (int16_t i = 0; i < 3; i++)
+			{
+				triTransformed.points[i] = MultiplyMatrixVector(WorldMatrix, tri.points[i]);
 
-			// Translate from 3D --> 2D
-			triProjected.points[0] = MultiplyMatrixVector(matProj, triTransformed.points[0]);
-			triProjected.points[1] = MultiplyMatrixVector(matProj, triTransformed.points[1]);
-			triProjected.points[2] = MultiplyMatrixVector(matProj, triTransformed.points[2]);
+				// Преобразуем из 3D -> 2D
+				triProjected.points[i] = MultiplyMatrixVector(matProj, triTransformed.points[i]);
 
-			// Scale into view, we moved the normalising into cartesian space
-			// out of the matrix.vector function from the previous videos, so
-			// do this manually
+				// Делим на Z для того, чтобы наши грани, которые находятся дальше, были меньше.
+				triProjected.points[i] = triProjected.points[i] / triProjected.points[i].w;
 
-			triProjected.points[0] = triProjected.points[0] / triProjected.points[0].w;
-			triProjected.points[1] = triProjected.points[1] / triProjected.points[1].w;
-			triProjected.points[2] = triProjected.points[2] / triProjected.points[2].w;
-
-			// X/Y are inverted so put them back
-			triProjected.points[0].x *= -1.0f;
-			triProjected.points[1].x *= -1.0f;
-			triProjected.points[2].x *= -1.0f;
-			triProjected.points[0].y *= -1.0f;
-			triProjected.points[1].y *= -1.0f;
-			triProjected.points[2].y *= -1.0f;
+				// X/Y are inverted so put them back
+				triProjected.points[i].x *= -1.0f;
+				triProjected.points[i].y *= -1.0f;
+			}
 
 			// Scaling to the size of the console
 			for (int16_t i = 0; i < 3; i++)
@@ -229,6 +219,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			tri_color++;
 			if (tri_color == FG_GREY) tri_color++;
 			triProjected.col = tri_color;
+			triProjected.sym = PIXEL_SOLID;
 
 			vecTrianglesToRaster.push_back(triProjected);
 		}
@@ -241,7 +232,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			{
 				float z1 = (t1.points[0].z + t1.points[1].z + t1.points[2].z) / 3.0f;
 				float z2 = (t2.points[0].z + t2.points[1].z + t2.points[2].z) / 3.0f;
-				return z1 > z2; // was >
+				return z1 < z2; // Warnock Zbuf (<); Other (>)
 			});
 
 		// Round all coord of points
@@ -251,6 +242,7 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			{
 				tri.points[i].x = roundf(tri.points[i].x);
 				tri.points[i].y = roundf(tri.points[i].y);
+				tri.points[i].z *= 100.0f;
 			}
 		}
 
@@ -258,13 +250,15 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 		DrawShadow(vecTrianglesToRaster, light);
 		//WarnockAlgorithm(vecTrianglesToRaster, 0.0f, iConsoleWidth - 1, 0.0f, iConsoleHeight - 1);
 
-		std::vector<triangle> vecVisibleSurfaces;
+		/*std::vector<triangle> vecVisibleSurfaces;
 		fPoint3D view_point = { static_cast<float>(iConsoleWidth) / 2.0f, static_cast<float>(iConsoleHeight) / 2.0f, -100.0f };
 
 		vecVisibleSurfaces = RobertsAlgorithm(vecTrianglesToRaster, view_point, barycenter, PIXEL_SOLID, FG_DARK_BLUE);
-		RobertsAlgorithm(vecVisibleSurfaces, light, barycenter, PIXEL_SOLID, FG_BLUE);
+		RobertsAlgorithm(vecVisibleSurfaces, light, barycenter, PIXEL_SOLID, FG_BLUE);*/
 
 		//PainterAlgorithm(vecTrianglesToRaster);
+
+		ZBufferAlgorithm(vecTrianglesToRaster);
 		
 		t += 1.0f;
 		barycenter = 0.0f;

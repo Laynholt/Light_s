@@ -411,6 +411,7 @@ public:
 		int16_t sym = PIXEL_SOLID, int16_t col = FG_BLUE, int16_t col_edge = FG_GREY);
 	void PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int16_t sym = PIXEL_SOLID, int16_t col = FG_DARK_YELLOW,
 		int16_t col_edge = FG_GREY);
+	void ZBufferAlgorithm(std::vector<triangle>& vecTriangleToRaster);
 
 	void DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D& light);
 
