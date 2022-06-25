@@ -7,28 +7,52 @@ void NewGarphics::OnUserCreate()
 	shapes[0].tris =
 	{
 			// SOUTH
-			{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+			{ -1.0f, -1.0f, -1.0f,    -1.0f, 1.0f, -1.0f,    1.0f, 1.0f, -1.0f },
+			{ -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, -1.0f,    1.0f, -1.0f, -1.0f },
 
 			// EAST                                                      
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+			{ 1.0f, -1.0f, -1.0f,    1.0f, 1.0f, -1.0f,    1.0f, 1.0f, 1.0f },
+			{ 1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,    1.0f, -1.0f, 1.0f },
 
 			// NORTH                                                     
-			{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+			{ 1.0f, -1.0f, 1.0f,    1.0f, 1.0f, 1.0f,    -1.0f, 1.0f, 1.0f },
+			{ 1.0f, -1.0f, 1.0f,    -1.0f, 1.0f, 1.0f,    -1.0f, -1.0f, 1.0f },
 
 			// WEST                                                      
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+			{ -1.0f, -1.0f, 1.0f,    -1.0f, 1.0f, 1.0f,    -1.0f, 1.0f, -1.0f },
+			{ -1.0f, -1.0f, 1.0f,    -1.0f, 1.0f, -1.0f,    -1.0f, -1.0f, -1.0f },
 
 			// TOP                                                       
-			{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-			{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
+			{ -1.0f, 1.0f, -1.0f,    -1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
+			{ -1.0f, 1.0f, -1.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, -1.0f },
 
 			// BOTTOM                                                    
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+			{ 1.0f, -1.0f, 1.0f,    -1.0f, -1.0f, 1.0f,    -1.0f, -1.0f, -1.0f },
+			{ 1.0f, -1.0f, 1.0f,    -1.0f, -1.0f, -1.0f,    1.0f, -1.0f, -1.0f },
+
+
+			//////{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
+			//////{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+
+			//////// EAST                                                      
+			//////{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
+			//////{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+
+			//////// NORTH                                                     
+			//////{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
+			//////{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+
+			//////// WEST                                                      
+			//////{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
+			//////{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+
+			//////// TOP                                                       
+			//////{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
+			//////{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
+
+			//////// BOTTOM                                                    
+			//////{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
+			//////{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 
 		//// Основание
 		//	{ 0.0f, 0.0f, 0.0f,    2.0f, 0.0f, 0.0f,    1.0f, 0.0f, 2.0f },
@@ -82,13 +106,13 @@ void NewGarphics::OnUserCreate()
 
 	matProj = Matrix_MakeProjection(90.0f, static_cast<float>(GetConsoleHeight()) / static_cast<float>(GetConsoleWidth()), 0.1f, 1000.0f);
 
-	light.x = 1.0f;
-	light.y = -100.0f;
-	light.z = 1.0f;
-
-	//light.x = iConsoleWidth / 2;
+	//light.x = 1.0f;
 	//light.y = -100.0f;
-	//light.z = 5.0f;
+	//light.z = 1.0f;
+
+	light.x = iConsoleWidth / 2;
+	light.y = -100.0f;
+	light.z = 5.0f;
 	
 	scale = 1.0f;							
 	//_x = 2.35f, _y = 1.2f; 
@@ -198,8 +222,8 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 				triProjected.points[i] = triProjected.points[i] / triProjected.points[i].w;
 
 				// X/Y are inverted so put them back
-				triProjected.points[i].x *= -1.0f;
-				triProjected.points[i].y *= -1.0f;
+				//triProjected.points[i].x *= -1.0f;
+				//triProjected.points[i].y *= -1.0f;
 			}
 
 			// Scaling to the size of the console
@@ -243,7 +267,6 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 			{
 				tri.points[i].x = roundf(tri.points[i].x);
 				tri.points[i].y = roundf(tri.points[i].y);
-				tri.points[i].z *= 100.0f;
 			}
 		}
 
@@ -251,16 +274,16 @@ void NewGarphics::OnUserUpdate(float fElapsedTime)
 		DrawShadow(vecTrianglesToRaster, light);
 		//WarnockAlgorithm(vecTrianglesToRaster, 0.0f, iConsoleWidth - 1, 0.0f, iConsoleHeight - 1);
 
-		/*std::vector<triangle> vecVisibleSurfaces;
+		std::vector<triangle> vecVisibleSurfaces;
 		fPoint3D view_point = { static_cast<float>(iConsoleWidth) / 2.0f, static_cast<float>(iConsoleHeight) / 2.0f, -100.0f };
 
 		vecVisibleSurfaces = RobertsAlgorithm(vecTrianglesToRaster, view_point, barycenter, PIXEL_SOLID, FG_DARK_BLUE);
-		RobertsAlgorithm(vecVisibleSurfaces, light, barycenter, PIXEL_SOLID, FG_BLUE);*/
+		RobertsAlgorithm(vecVisibleSurfaces, light, barycenter, PIXEL_SOLID, FG_BLUE);
 
 		//PainterAlgorithm(vecTrianglesToRaster);
 
 		//ZBufferAlgorithm(vecTrianglesToRaster);
-		ZBufferAlgorithmModified(vecTrianglesToRaster);
+		//ZBufferAlgorithmModified(vecTrianglesToRaster);
 		
 		t += 1.0f;
 		barycenter = 0.0f;

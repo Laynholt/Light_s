@@ -142,7 +142,6 @@ void Graphics::Loop()
 	OnUserCreate();
 
 	bool bExit = false;
-	bool bKeyWasPressed = true;									// Else we cann't go to OnUserUpdate()
 
 	while (!bExit)
 	{
@@ -174,8 +173,6 @@ void Graphics::Loop()
 					m_keys[i].bReleased = true;
 					m_keys[i].bHeld = false;
 				}
-
-				bKeyWasPressed = true;
 			}
 
 			m_keyOldState[i] = m_keyNewState[i];
@@ -255,17 +252,18 @@ void Graphics::Loop()
 		}
 
 
-		if (bKeyWasPressed)
-		{
-			OnUserUpdate(fElapsedTime);
-			//bKeyWasPressed = false;
-		}
+		OnUserUpdate(fElapsedTime);
 
 		// Update Title & Present Screen Buffer
 		wchar_t s[256];
 		swprintf_s(s, 256, L"%s - FPS: %3.2f", wsApp_name.c_str(), 1.0f / fElapsedTime);
 		SetConsoleTitle(s);
 		WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
+
+		if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
+			bExit = true;
+
+		Sleep(5);
 	}
 }
 
@@ -807,10 +805,10 @@ void Graphics::WarnockAlgorithm(std::vector<triangle>& vecTrianglesToRaster, flo
 	};
 
 	// Show net
-	/*DrawLineBresenham(_left_x, _top_y, _right_x, _top_y, PIXEL_SOLID, FG_GREY);
+	DrawLineBresenham(_left_x, _top_y, _right_x, _top_y, PIXEL_SOLID, FG_GREY);
 	DrawLineBresenham(_left_x, _top_y, _left_x, _bottom_y, PIXEL_SOLID, FG_GREY);
 	DrawLineBresenham(_left_x, _bottom_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
-	DrawLineBresenham(_right_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);*/
+	DrawLineBresenham(_right_x, _top_y, _right_x, _bottom_y, PIXEL_SOLID, FG_GREY);
 
 
 	// Delete all disjoin polygons
@@ -974,24 +972,34 @@ void Graphics::PainterAlgorithm(std::vector<triangle>& vecTrianglesToRaster, int
 		else if (checkPointAndSegment(tri.points[0], tri.points[1], tri.points[2])) its_edge = true;
 		else if (checkPointAndSegment(tri.points[1], tri.points[0], tri.points[2])) its_edge = true;
 
-
+		
 		if (!its_edge)
 		{
-			for (int16_t i = 0; i < 3; i++)
+			fPoint3D normal, vec1, vec2;
+
+			vec1 = tri.points[1] - tri.points[0];
+			vec2 = tri.points[2] - tri.points[0];
+
+			normal = Vector_CrossProduct(vec1, vec2);
+			normal = Vector_Normalise(normal);
+
+			// Выводим только те грани, которые видим
+			if (Vector_DotProduct(normal, tri.points[0]) < 0.0f)
 			{
-				lines[i].x = tri.points[i].x;
-				lines[i].y = tri.points[i].y;
+				for (int16_t i = 0; i < 3; i++)
+				{
+					lines[i].x = tri.points[i].x;
+					lines[i].y = tri.points[i].y;
+				}
+
+				// Выводим на экран
+				ShadingPolygonsScanLine(lines, sym, tri.col);
+				//DrawPolygons(lines, sym, col_edge);
+				//ShadingPolygonsFloodFillRecursion(lines, sym, tri.col, col_edge);
+				DrawPolygons(lines, sym, tri.col);
+
+				//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
 			}
-
-			// Выводим на экран
-
-			ShadingPolygonsScanLine(lines, sym, tri.col);
-
-			//DrawPolygons(lines, sym, col_edge);
-			//ShadingPolygonsFloodFillRecursion(lines, sym, tri.col, col_edge);
-			DrawPolygons(lines, sym, tri.col);
-
-			//WriteConsoleOutput(hConsole, console, { iConsoleWidth, iConsoleHeight }, { 0,0 }, &rectWindow);
 		}
 		its_edge = false;
 	}
@@ -1178,19 +1186,19 @@ void Graphics::DrawShadow(std::vector<triangle>& vecTrianglesToRaster, fPoint3D&
 
 			// Infinity light:
 
-			tri.points[i].x -= light.x * (tri.points[i].y / light.y);
+			/*tri.points[i].x -= light.x * (tri.points[i].y / light.y);
 			tri.points[i].z = -tri.points[i].z - light.z * (tri.points[i].y / light.y);
-			tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 0.1f;
+			tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) + tri.points[i].z * 10.0f;*/
 
 			// Local light:
 
-			//tri.points[i].x = tri.points[i].x + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y)
-			//	* (tri.points[i].x - light.x) / (tri.points[i].y - light.y);
+			tri.points[i].x = tri.points[i].x + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y)
+				* (tri.points[i].x - light.x) / (tri.points[i].y - light.y);
 
-			//tri.points[i].z = tri.points[i].z + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y) 
-			//	* (tri.points[i].z - light.z) / (tri.points[i].y - light.y);
+			tri.points[i].z = tri.points[i].z + (0.50f * static_cast<float>(iConsoleHeight) - tri.points[i].y) 
+				* (tri.points[i].z - light.z) / (tri.points[i].y - light.y);
 
-			//tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 0.8f;
+			tri.points[i].y = 0.90f * static_cast<float>(iConsoleHeight) - tri.points[i].z * 8.0f;
 		}
 	}
 
